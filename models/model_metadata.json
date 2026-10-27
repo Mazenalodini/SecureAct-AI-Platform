@@ -1,0 +1,131 @@
+{
+  "model_name": "SecureAct_AI_v2",
+  "phase": "v2_training_and_evaluation",
+  "dataset": "perplexity-ai/browsesafe-plus-plus",
+  "dataset_revision": "b8c50afc1a1904923c67657dfa1abf41f812ec71",
+  "source_split_used_for_fit": "v2_train",
+  "source_provenance": "BrowseSafe++ mixed production-observed and inherited provenance; no per-pair production filter exists.",
+  "view_type": "html",
+  "feature_contract": {
+    "allowlist": [
+      "content"
+    ],
+    "view_policy": "one view per experiment",
+    "contract_sha256": "c5e4fdc605b66b135e47f59171c44e31542d22cc7d72da4b42e7ee850c6bbf1f"
+  },
+  "candidate": {
+    "name": "html_word_char_linear_svc",
+    "view": "html",
+    "feature_mode": "word_char",
+    "estimator": "linear_svc"
+  },
+  "feature_description": "TF-IDF word (1-2 grams) and/or character (3-5 grams); no metadata or identifiers.",
+  "threshold": -0.23754153513923493,
+  "threshold_selection": {
+    "threshold": -0.23754153513923493,
+    "recall": 0.9438990182328191,
+    "false_positive_rate": 0.04908835904628331,
+    "precision": 0.9505649717514124,
+    "max_fpr": 0.05,
+    "recall_target_80pct_met": true,
+    "n_pairs": 713
+  },
+  "threshold_calibration_partition": "v2_threshold_calibration",
+  "model_selection_partition": "v2_development",
+  "final_evaluation_partition": "v2_local_test",
+  "test_partition_is_blind": false,
+  "test_touched_for_selection_or_threshold": false,
+  "train_pairs": 6656,
+  "train_pages": 13312,
+  "fit_after_threshold_calibration": false,
+  "v1_baseline_sha256": "e358fda49363c4ee8926f72a5a76b8c4e223e77de2d4ec9a2115ddd04e45b9fc",
+  "v1_baseline_development_metrics": {
+    "n_pages": 2852,
+    "threshold": -0.21948632427850434,
+    "accuracy": 0.8320476858345021,
+    "balanced_accuracy": 0.8320476858345021,
+    "precision": 0.8365316275764036,
+    "recall": 0.8253856942496494,
+    "f1": 0.830921284857042,
+    "specificity": 0.8387096774193549,
+    "false_positive_rate": 0.16129032258064516,
+    "average_precision": 0.9219462969935468,
+    "roc_auc": 0.9093242310211678,
+    "confusion_matrix_labels_0_no_1_yes": [
+      [
+        1196,
+        230
+      ],
+      [
+        249,
+        1177
+      ]
+    ],
+    "baseline": "v1 frozen; threshold from saved metadata",
+    "threshold_from_v1_metadata": -0.21948632427850434,
+    "pair_metrics": {
+      "n_pairs": 1426,
+      "malformed_pairs": 0,
+      "attack_recall_at_pair_level": 0.8253856942496494,
+      "benign_control_specificity_at_pair_level": 0.8387096774193549,
+      "both_pages_correct_rate": 0.6640953716690042,
+      "at_least_one_page_in_pair_correct_rate": 1.0
+    }
+  },
+  "data_parquet_sha256": "23069279c954d4ba512beef3f1141fca74f245b1d8801616507a2fd869f5088d",
+  "split_manifest_sha256": "7b861c11e39afe2f983b8fb7d94ec97ce4c03f1bc5ba47efce0d12751f35add8",
+  "seed": 20261024,
+  "python_version": "3.12.3",
+  "scikit_learn_version": "1.9.1",
+  "numpy_version": "2.5.4",
+  "pandas_version": "3.1.0",
+  "pyarrow_version": "26.0.0",
+  "model_sha256": "8569185d875a1bd76768e1a576c1cfcfd8ff6d74529cd5e646f67d610f2ece5c",
+  "v2_selected_candidate_development_metrics": {
+    "candidate": "html_word_char_linear_svc",
+    "view": "html",
+    "feature_mode": "word_char",
+    "estimator": "linear_svc",
+    "fit_and_score_seconds": 1982.8367539710016,
+    "train_pairs": 6656,
+    "dev_pairs": 1426,
+    "n_pages": 2852,
+    "threshold": 0.0,
+    "accuracy": 0.9309256661991585,
+    "balanced_accuracy": 0.9309256661991585,
+    "precision": 0.980453479280688,
+    "recall": 0.879382889200561,
+    "f1": 0.9271719038817006,
+    "specificity": 0.982468443197756,
+    "false_positive_rate": 0.01753155680224404,
+    "average_precision": 0.98862135839197,
+    "roc_auc": 0.9877156160190728,
+    "confusion_matrix_labels_0_no_1_yes": [
+      [
+        1401,
+        25
+      ],
+      [
+        172,
+        1254
+      ]
+    ],
+    "dev_recall_at_fpr_5pct": 0.9368863955119214,
+    "dev_threshold_diagnostic_only": -0.21204034502951075,
+    "dev_fpr_at_selected_point": 0.04908835904628331,
+    "dev_precision_at_fpr_5pct": 0.9502133712660028,
+    "selection_rank": 1
+  },
+  "metadata_correction": {
+    "correction_type": "external-sidecar-label-and-value correction only",
+    "reason": "The run-time sidecar stored the selected v2 development row under the key v1_baseline_development_metrics; the raw v1 metrics are preserved in v2_training_summary.json.",
+    "corrected_at_utc": "2026-10-24T01:06:25.028380+00:00",
+    "serialized_model_modified": false,
+    "model_sha256_unchanged": "8569185d875a1bd76768e1a576c1cfcfd8ff6d74529cd5e646f67d610f2ece5c",
+    "embedded_joblib_metadata_remains_as_run": true,
+    "raw_sidecar_file": "secureact_ai_v2_model_metadata_raw_as_run.json",
+    "authoritative_v1_metrics_source": "../results/v2_training_summary.json:v1_development_metrics",
+    "authoritative_v2_development_metrics_source": "../results/candidate_development_metrics.csv",
+    "test_rescored": false
+  }
+}
