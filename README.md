@@ -6,7 +6,7 @@
 
 ## 🌐 روابط الوصول السريع (Quick Links & Live Platform)
 
-- **المنصة الحية على Vercel:** [https://secureact-ai-platform.vercel.app](https://secureact-ai-platform.vercel.app) *(سيتم تحديث الرابط فور اكتمال النشر)*
+- **المنصة الحية على Vercel:** [https://secureact-ai.vercel.app](https://secureact-ai.vercel.app) 🟢 *(جاهزة ومفعلة بكامل المزايا والوظائف)*
 - **مستودع الكود المصدري:** [https://github.com/Mazenalodini/SecureAct-AI-Platform](https://github.com/Mazenalodini/SecureAct-AI-Platform)
 - **البطاقة الفنية للنموذج:** [`MODEL_CARD.md`](MODEL_CARD.md)
 - **المنهجية العلمية والتقييم الإحصائي:** [`METHODOLOGY.md`](METHODOLOGY.md)
