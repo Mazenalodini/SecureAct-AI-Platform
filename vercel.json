@@ -5,7 +5,8 @@
   "framework": "vite",
   "functions": {
     "api/index.py": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "excludeFiles": "{frontend/**,tests/**,*.md,*.zip}"
     }
   },
   "rewrites": [
