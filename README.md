@@ -11,7 +11,6 @@
 - **البطاقة الفنية للنموذج:** [`MODEL_CARD.md`](MODEL_CARD.md)
 - **المنهجية العلمية والتقييم الإحصائي:** [`METHODOLOGY.md`](METHODOLOGY.md)
 - **السياسة الأمنية وضوابط SSRF:** [`SECURITY.md`](SECURITY.md)
-- **دليل العرض التوضيحي للأستاذ:** [`DEMO_GUIDE_AR.md`](DEMO_GUIDE_AR.md)
 
 ---
 
