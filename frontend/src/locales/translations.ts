@@ -215,7 +215,28 @@ export const translations = {
     footer_rights: "جميع الاستدلالات والقرارات الأمنية ناتجة عن النموذج الفعلي SecureAct_AI_v2.",
     footer_disclaimer: "أداة مساعدة ضمن استراتيجية الدفاع في العمق. لا تعتبر بديلاً شاملاً عن الضوابط الأمنية المتكاملة.",
     error_prefix: "خطأ: ",
-    close: "إغلاق"
+    close: "إغلاق",
+
+    // Content & Threat Inspector
+    inspector_title: "مفتش محتوى الصفحة وتحليل التهديدات",
+    inspector_subtitle: "معاينة النصوص المسترجعة وتفاصيل المقاطع التي تحتوي على مؤشرات حقن التعليمات",
+    tab_flagged_snippets: "المقاطع المشبوهة المكتشفة",
+    tab_extracted_text: "النص المستخرج النظيف",
+    tab_raw_html: "شفرة المصدر (HTML)",
+    no_snippets_found: "لم يتم رصد أنماط حقن تعليمات صريحة أو موجهات مشبوهة في هذا المحتوى.",
+    threat_snippets_detected: "مقطع مشبوه مكتشف",
+    risk_level_label: "مستوى الخطورة",
+    risk_high: "عالي الخطورة",
+    risk_medium: "متوسط الخطورة",
+    risk_low: "منخفض",
+    copy_content: "نسخ المحتوى",
+    copied_success: "تم النسخ بنجاح!",
+    inspector_lines: "الأسطر",
+    inspector_chars: "الأحرف",
+    inspector_words: "الكلمات",
+    preview_truncated_notice: "معاينة سريعة مقتطعة لأول 15,000 حرف للحفاظ على سرعة الاستجابة وتجربة التصفح.",
+    nav_menu_close: "إغلاق القائمة",
+    nav_quick_access: "تنقل سريع"
   },
   en: {
     // Navigation
@@ -433,7 +454,28 @@ export const translations = {
     footer_rights: "All inferences and security verdicts computed by the authentic SecureAct_AI_v2 model.",
     footer_disclaimer: "Defense-in-depth assistance tool. Not intended as a sole standalone security control.",
     error_prefix: "Error: ",
-    close: "Close"
+    close: "Close",
+
+    // Content & Threat Inspector
+    inspector_title: "Content Inspector & Threat Analysis",
+    inspector_subtitle: "Inspect retrieved page content and examine detected prompt injection patterns with AI rationale",
+    tab_flagged_snippets: "Flagged Threat Snippets",
+    tab_extracted_text: "Clean Extracted Text",
+    tab_raw_html: "Raw HTML Source",
+    no_snippets_found: "No explicit prompt injection patterns or suspicious directives detected in this content.",
+    threat_snippets_detected: "Threat Snippet(s) Flagged",
+    risk_level_label: "Risk Level",
+    risk_high: "High Risk",
+    risk_medium: "Medium Risk",
+    risk_low: "Low Risk",
+    copy_content: "Copy Content",
+    copied_success: "Copied successfully!",
+    inspector_lines: "Lines",
+    inspector_chars: "Chars",
+    inspector_words: "Words",
+    preview_truncated_notice: "Live preview truncated to first 15,000 characters for optimal rendering performance.",
+    nav_menu_close: "Close Menu",
+    nav_quick_access: "Quick Navigation"
   }
 };
 

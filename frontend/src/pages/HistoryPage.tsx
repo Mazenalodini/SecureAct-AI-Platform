@@ -169,116 +169,220 @@ export const HistoryPage: React.FC<HistoryPageProps> = ({
           </p>
         </div>
       ) : (
-        /* History Table */
-        <div className="glass-panel" style={{ padding: '0', overflow: 'hidden' }}>
-          <div className="table-responsive">
-            <table>
-              <thead>
-                <tr>
-                  <th style={{ width: '40px' }}></th>
-                  <th>{t('col_timestamp')}</th>
-                  <th>{t('col_type')}</th>
-                  <th>{t('col_target')}</th>
-                  <th>{t('col_decision')}</th>
-                  <th>{t('col_score')}</th>
-                  <th style={{ textAlign: 'center' }}>{t('col_actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredHistory.map((item) => {
-                  const isSelectedForCompare = compareIds.includes(item.id);
-                  const isUrl = item.type === 'url';
+        <>
+          {/* Desktop Table View */}
+          <div className="glass-panel history-desktop-table" style={{ padding: '0', overflow: 'hidden' }}>
+            <div className="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th style={{ width: '40px' }}></th>
+                    <th>{t('col_timestamp')}</th>
+                    <th>{t('col_type')}</th>
+                    <th>{t('col_target')}</th>
+                    <th>{t('col_decision')}</th>
+                    <th>{t('col_score')}</th>
+                    <th style={{ textAlign: 'center' }}>{t('col_actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredHistory.map((item) => {
+                    const isSelectedForCompare = compareIds.includes(item.id);
+                    const isUrl = item.type === 'url';
 
-                  return (
-                    <tr 
-                      key={item.id}
-                      style={{
-                        background: isSelectedForCompare ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
-                        transition: 'var(--transition)'
-                      }}
-                    >
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={isSelectedForCompare}
-                          onChange={() => toggleCompareSelect(item.id)}
-                          title={t('btn_compare_select')}
-                          style={{ cursor: 'pointer' }}
-                        />
-                      </td>
-                      <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                        {new Date(item.timestamp).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}
-                      </td>
-                      <td>
-                        <span className="badge badge-cyan" style={{ fontSize: '0.74rem' }}>
-                          {item.type.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="font-mono" style={{ fontSize: '0.86rem', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {item.target}
-                      </td>
-                      <td>
-                        {item.status === 'failed' ? (
-                          <span className="badge badge-danger" style={{ fontSize: '0.74rem' }}>
-                            {item.error || 'Failed'}
+                    return (
+                      <tr 
+                        key={item.id}
+                        style={{
+                          background: isSelectedForCompare ? 'rgba(56, 189, 248, 0.08)' : 'transparent',
+                          transition: 'var(--transition)'
+                        }}
+                      >
+                        <td>
+                          <input
+                            type="checkbox"
+                            checked={isSelectedForCompare}
+                            onChange={() => toggleCompareSelect(item.id)}
+                            title={t('btn_compare_select')}
+                            style={{ cursor: 'pointer' }}
+                          />
+                        </td>
+                        <td style={{ fontSize: '0.82rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                          {new Date(item.timestamp).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-US')}
+                        </td>
+                        <td>
+                          <span className="badge badge-cyan" style={{ fontSize: '0.74rem' }}>
+                            {item.type.toUpperCase()}
                           </span>
-                        ) : item.is_injection ? (
-                          <span className="badge badge-danger" style={{ fontSize: '0.74rem' }}>
-                            <ShieldAlert size={12} />
-                            <span>{language === 'ar' ? 'مؤشر حقن' : 'Injection'}</span>
-                          </span>
-                        ) : (
-                          <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
-                            <ShieldCheck size={12} />
-                            <span>{language === 'ar' ? 'سليم' : 'Benign'}</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="font-mono" style={{ fontSize: '0.86rem' }}>
-                        {item.score !== undefined ? item.score.toFixed(4) : '—'}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-                          {/* View details */}
-                          <button
-                            onClick={() => setInspectItem(item)}
-                            className="btn btn-secondary"
-                            style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                            title={t('btn_view_details')}
-                          >
-                            <Eye size={14} />
-                          </button>
-
-                          {/* Re-scan */}
-                          {(item.type === 'url' || item.type === 'text') && (
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '0.86rem', maxWidth: '280px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {item.target}
+                        </td>
+                        <td>
+                          {item.status === 'failed' ? (
+                            <span className="badge badge-danger" style={{ fontSize: '0.74rem' }}>
+                              {item.error || 'Failed'}
+                            </span>
+                          ) : item.is_injection ? (
+                            <span className="badge badge-danger" style={{ fontSize: '0.74rem' }}>
+                              <ShieldAlert size={12} />
+                              <span>{language === 'ar' ? 'مؤشر حقن' : 'Injection'}</span>
+                            </span>
+                          ) : (
+                            <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
+                              <ShieldCheck size={12} />
+                              <span>{language === 'ar' ? 'سليم' : 'Benign'}</span>
+                            </span>
+                          )}
+                        </td>
+                        <td className="font-mono" style={{ fontSize: '0.86rem' }}>
+                          {item.score !== undefined ? item.score.toFixed(4) : '—'}
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+                            {/* View details */}
                             <button
-                              onClick={() => onRescanTarget({ type: item.type === 'url' ? 'url' : 'text', value: item.target })}
+                              onClick={() => setInspectItem(item)}
                               className="btn btn-secondary"
                               style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                              title={t('btn_rescan')}
+                              title={t('btn_view_details')}
                             >
-                              <RefreshCw size={14} />
+                              <Eye size={14} />
                             </button>
-                          )}
 
-                          {/* Delete */}
-                          <button
-                            onClick={() => onDeleteItem(item.id)}
-                            className="btn btn-danger"
-                            style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-                            title={t('btn_delete_item')}
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                            {/* Re-scan */}
+                            {(item.type === 'url' || item.type === 'text') && (
+                              <button
+                                onClick={() => onRescanTarget({ type: item.type === 'url' ? 'url' : 'text', value: item.target })}
+                                className="btn btn-secondary"
+                                style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                                title={t('btn_rescan')}
+                              >
+                                <RefreshCw size={14} />
+                              </button>
+                            )}
+
+                            {/* Delete */}
+                            <button
+                              onClick={() => onDeleteItem(item.id)}
+                              className="btn btn-danger"
+                              style={{ padding: '6px 10px', fontSize: '0.78rem' }}
+                              title={t('btn_delete_item')}
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile Card Feed View (< 640px) */}
+          <div className="history-mobile-cards">
+            {filteredHistory.map((item) => {
+              const isSelectedForCompare = compareIds.includes(item.id);
+              return (
+                <div 
+                  key={item.id}
+                  className="glass-panel"
+                  style={{
+                    padding: '16px',
+                    border: isSelectedForCompare ? '1px solid var(--border-glow)' : '1px solid var(--border-subtle)',
+                    background: isSelectedForCompare ? 'rgba(56, 189, 248, 0.08)' : 'var(--bg-card)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        type="checkbox"
+                        checked={isSelectedForCompare}
+                        onChange={() => toggleCompareSelect(item.id)}
+                        title={t('btn_compare_select')}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <span className="badge badge-cyan" style={{ fontSize: '0.72rem' }}>
+                        {item.type.toUpperCase()}
+                      </span>
+                    </div>
+
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)' }}>
+                      {new Date(item.timestamp).toLocaleTimeString(language === 'ar' ? 'ar-EG' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+
+                  <div className="font-mono" style={{ fontSize: '0.86rem', color: '#ffffff', wordBreak: 'break-all' }}>
+                    {item.target}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                    <div>
+                      {item.status === 'failed' ? (
+                        <span className="badge badge-danger" style={{ fontSize: '0.74rem' }}>
+                          {item.error || 'Failed'}
+                        </span>
+                      ) : item.is_injection ? (
+                        <span className="badge badge-danger" style={{ fontSize: '0.74rem' }}>
+                          <ShieldAlert size={12} />
+                          <span>{language === 'ar' ? 'مؤشر حقن' : 'Injection'}</span>
+                        </span>
+                      ) : (
+                        <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
+                          <ShieldCheck size={12} />
+                          <span>{language === 'ar' ? 'سليم' : 'Benign'}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {item.score !== undefined && (
+                      <span className="font-mono" style={{ fontSize: '0.84rem', color: item.is_injection ? '#fb7185' : '#34d399', fontWeight: 700 }}>
+                        Score: {item.score.toFixed(4)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Mobile Action Buttons */}
+                  <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <button
+                      onClick={() => setInspectItem(item)}
+                      className="btn btn-secondary"
+                      style={{ flex: 1, padding: '8px', fontSize: '0.82rem', justifyContent: 'center' }}
+                    >
+                      <Eye size={14} />
+                      <span>{language === 'ar' ? 'التفاصيل' : 'Details'}</span>
+                    </button>
+
+                    {(item.type === 'url' || item.type === 'text') && (
+                      <button
+                        onClick={() => onRescanTarget({ type: item.type === 'url' ? 'url' : 'text', value: item.target })}
+                        className="btn btn-secondary"
+                        style={{ padding: '8px 12px', fontSize: '0.82rem', justifyContent: 'center' }}
+                        title={t('btn_rescan')}
+                      >
+                        <RefreshCw size={14} />
+                      </button>
+                    )}
+
+                    <button
+                      onClick={() => onDeleteItem(item.id)}
+                      className="btn btn-danger"
+                      style={{ padding: '8px 12px', fontSize: '0.82rem', justifyContent: 'center' }}
+                      title={t('btn_delete_item')}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* ========================================================= */}

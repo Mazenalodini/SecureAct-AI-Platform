@@ -1,3 +1,14 @@
+export interface FlaggedSnippet {
+  text: string;
+  start_pos: number;
+  end_pos: number;
+  category: string;
+  risk_level: 'high' | 'medium' | 'low';
+  reason_ar: string;
+  reason_en: string;
+  score?: number | null;
+}
+
 export interface PredictResponse {
   score: number;
   threshold: number;
@@ -9,6 +20,7 @@ export interface PredictResponse {
   model_name: string;
   disclaimer: string;
   filename?: string;
+  flagged_snippets?: FlaggedSnippet[];
 }
 
 export interface ModelInfo {
@@ -150,6 +162,9 @@ export interface ScanUrlResponse {
   scan_time_iso: string;
   js_rendered: boolean;
   warning?: string;
+  content_preview?: string;
+  extracted_text_preview?: string;
+  flagged_snippets?: FlaggedSnippet[];
 }
 
 export interface BatchScanResponse {

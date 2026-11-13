@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { HealthStatus } from '../types';
-import { Shield, Globe, Terminal, History, Search, BookOpen, Menu, X } from 'lucide-react';
+import { 
+  Shield, 
+  Globe, 
+  Terminal, 
+  History, 
+  Search, 
+  BookOpen, 
+  Menu, 
+  X,
+  ChevronRight
+} from 'lucide-react';
 
 interface NavbarProps {
   activeTab: string;
@@ -33,15 +43,16 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
       position: 'sticky',
       top: 0,
       zIndex: 100,
-      background: 'rgba(7, 9, 14, 0.90)',
+      background: 'rgba(7, 9, 14, 0.92)',
       backdropFilter: 'blur(20px)',
+      WebkitBackdropFilter: 'blur(20px)',
       borderBottom: '1px solid var(--border-subtle)'
     }}>
       <div className="container" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: '74px'
+        height: '76px'
       }}>
         {/* Brand */}
         <div 
@@ -50,7 +61,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
             display: 'flex',
             alignItems: 'center',
             gap: '12px',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            userSelect: 'none'
           }}
         >
           <div style={{
@@ -61,14 +73,23 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 0 20px rgba(14, 165, 233, 0.4)'
+            boxShadow: '0 0 24px rgba(14, 165, 233, 0.45)',
+            flexShrink: 0
           }}>
             <Shield size={24} color="#ffffff" />
           </div>
           <div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>{t('platform_name')}</span>
-              <span style={{
+            <div style={{ 
+              fontSize: '1.25rem', 
+              fontWeight: 800, 
+              letterSpacing: '-0.02em', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              lineHeight: 1.2
+            }}>
+              <span className="heading-gradient brand-title-text">{t('platform_name')}</span>
+              <span className="brand-version-badge" style={{
                 fontSize: '0.68rem',
                 padding: '2px 8px',
                 borderRadius: '6px',
@@ -78,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
                 fontWeight: 700
               }}>v2.0</span>
             </div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 500 }}>
+            <div className="brand-subtitle-text" style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 500, marginTop: '2px' }}>
               {t('platform_subtitle')}
             </div>
           </div>
@@ -97,13 +118,13 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  padding: '8px 16px',
-                  borderRadius: '10px',
+                  padding: '9px 18px',
+                  borderRadius: '11px',
                   border: isActive ? '1px solid var(--border-glow)' : '1px solid transparent',
                   background: isActive ? 'rgba(56, 189, 248, 0.12)' : 'transparent',
                   color: isActive ? '#38bdf8' : 'var(--text-muted)',
                   fontWeight: isActive ? 700 : 500,
-                  fontSize: '0.92rem',
+                  fontSize: '0.94rem',
                   cursor: 'pointer',
                   transition: 'var(--transition)',
                   position: 'relative'
@@ -129,21 +150,25 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
         </nav>
 
         {/* System Status & Language Toggle + Mobile Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {/* Health Status Pill */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '6px 12px',
-            borderRadius: '9999px',
-            background: isHealthy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
-            border: isHealthy ? '1px solid rgba(16, 185, 129, 0.25)' : '1px solid rgba(244, 63, 94, 0.25)',
-            fontSize: '0.8rem',
-            fontWeight: 600
-          }}>
+          <div 
+            className="health-pill"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '7px 14px',
+              borderRadius: '9999px',
+              background: isHealthy ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
+              border: isHealthy ? '1px solid rgba(16, 185, 129, 0.28)' : '1px solid rgba(244, 63, 94, 0.28)',
+              fontSize: '0.8rem',
+              fontWeight: 600
+            }}
+            title={isHealthy ? 'Model integrity verified (SHA-256)' : 'Model check degraded'}
+          >
             <span className={`live-indicator ${isHealthy ? '' : 'degraded'}`} />
-            <span style={{ color: isHealthy ? '#34d399' : '#fb7185' }}>
+            <span className="health-pill-text" style={{ color: isHealthy ? '#34d399' : '#fb7185' }}>
               {isHealthy ? t('nav_status_healthy') : t('nav_status_degraded')}
             </span>
           </div>
@@ -151,9 +176,9 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
           {/* Language Switcher */}
           <button
             onClick={toggleLanguage}
-            className="btn btn-secondary"
+            className="btn btn-secondary lang-toggle-btn"
             style={{
-              padding: '6px 12px',
+              padding: '7px 14px',
               fontSize: '0.84rem',
               borderRadius: '9999px',
               display: 'flex',
@@ -163,7 +188,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
             title={language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}
           >
             <Globe size={15} />
-            <span>{t('switch_language')}</span>
+            <span className="lang-text-full">{t('switch_language')}</span>
+            <span className="lang-text-short">{language === 'ar' ? 'EN' : 'عربي'}</span>
           </button>
 
           {/* Mobile Menu Toggle Button */}
@@ -172,12 +198,12 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle navigation menu"
           >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Dropdown Drawer (< 820px) */}
       {mobileMenuOpen && (
         <div className="mobile-nav-drawer">
           {navItems.map((item) => {
@@ -191,8 +217,8 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
-                  padding: '12px 16px',
-                  borderRadius: '10px',
+                  padding: '13px 16px',
+                  borderRadius: '11px',
                   border: isActive ? '1px solid var(--border-glow)' : '1px solid var(--border-subtle)',
                   background: isActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(15, 23, 42, 0.6)',
                   color: isActive ? '#38bdf8' : 'var(--text-main)',

@@ -2,6 +2,16 @@
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
 
+class FlaggedSnippet(BaseModel):
+    text: str = Field(..., description="The suspicious snippet text")
+    start_pos: int = Field(0, description="Character start index")
+    end_pos: int = Field(0, description="Character end index")
+    category: str = Field("pattern_match", description="Category: system_override, identity_hijack, delimiter, model_signal, etc.")
+    risk_level: str = Field("high", description="'high' | 'medium' | 'low'")
+    reason_ar: str = Field(..., description="Arabic explanation")
+    reason_en: str = Field(..., description="English explanation")
+    score: Optional[float] = Field(None, description="Local inference score if evaluated")
+
 class PredictRequest(BaseModel):
     content: str = Field(..., description="Text or HTML content to analyze")
 
@@ -15,6 +25,7 @@ class PredictResponse(BaseModel):
     byte_size: int = Field(..., description="Byte length in UTF-8")
     model_name: str = Field("SecureAct_AI_v2", description="Model identifier")
     filename: Optional[str] = Field(None, description="Optional uploaded filename")
+    flagged_snippets: List[FlaggedSnippet] = Field(default_factory=list, description="Suspicious prompt injection segments detected in content")
     disclaimer: str = Field(
         "SecureAct AI v2 is a research security classifier based on LinearSVC TF-IDF. "
         "A positive score indicates potential prompt injection indicators but does not guarantee intent. "
@@ -109,6 +120,9 @@ class ScanUrlResponse(BaseModel):
     scan_time_iso: str
     js_rendered: bool = False
     warning: Optional[str] = None
+    content_preview: Optional[str] = Field(None, description="Raw content preview from web page")
+    extracted_text_preview: Optional[str] = Field(None, description="Clean stripped text preview without HTML tags")
+    flagged_snippets: List[FlaggedSnippet] = Field(default_factory=list, description="Suspicious prompt injection segments detected in content")
 
 
 class BatchScanRequest(BaseModel):

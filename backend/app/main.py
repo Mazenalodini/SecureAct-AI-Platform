@@ -38,6 +38,7 @@ from .model_service import ModelService, ModelSecurityError
 from .middleware import RequestSizeLimitMiddleware, RateLimitMiddleware
 from .demo_data import DEMO_CASES
 from .url_scanner import fetch_url, fetch_urls_batch
+from .threat_analyzer import detect_threat_snippets, strip_html_tags
 
 # Configure logging
 logging.basicConfig(
@@ -204,6 +205,14 @@ async def predict_content(
 
     try:
         result = service.predict(text)
+        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
+        snippets = detect_threat_snippets(
+            content=text,
+            is_injection=result["is_injection"],
+            model_decision_fn=model_fn,
+            threshold=service.threshold
+        )
+        result["flagged_snippets"] = snippets
         return PredictResponse(**result)
     except Exception as e:
         logger.error(f"Inference error: {e}")
@@ -292,6 +301,14 @@ async def predict_file(
     try:
         prediction = service.predict(text)
         prediction["filename"] = filename
+        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
+        snippets = detect_threat_snippets(
+            content=text,
+            is_injection=prediction["is_injection"],
+            model_decision_fn=model_fn,
+            threshold=service.threshold
+        )
+        prediction["flagged_snippets"] = snippets
         return PredictResponse(**prediction)
     except Exception as e:
         logger.error(f"File prediction error: {e}")
@@ -352,8 +369,17 @@ async def scan_single_url(
         )
 
     # Successful fetch -> run prediction
+    html_text = fetch_res.html_content or ""
     try:
-        pred = service.predict(fetch_res.html_content or "")
+        pred = service.predict(html_text)
+        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
+        snippets = detect_threat_snippets(
+            content=html_text,
+            is_injection=pred.get("is_injection", False),
+            model_decision_fn=model_fn,
+            threshold=service.threshold
+        )
+        pred["flagged_snippets"] = snippets
         prediction_resp = PredictResponse(**pred)
     except Exception as e:
         logger.error(f"Prediction failed for fetched URL {fetch_res.url}: {e}")
@@ -361,9 +387,11 @@ async def scan_single_url(
 
     # Detect if content has client-side SPA cues with sparse static HTML
     warning = None
-    html_text = fetch_res.html_content or ""
     if fetch_res.char_count and fetch_res.char_count < 300 and ("id=\"root\"" in html_text or "id=\"app\"" in html_text or "noscript" in html_text):
         warning = "قد تعتمد هذه الصفحة على JavaScript لعرض المحتوى الكامل ديناميكياً (SPA). تم فحص كود HTML الأولي المسترجع فقط."
+
+    content_preview = html_text[:15000] if len(html_text) > 15000 else html_text
+    extracted_text = strip_html_tags(html_text, max_chars=15000)
 
     return ScanUrlResponse(
         url=fetch_res.url,
@@ -380,7 +408,10 @@ async def scan_single_url(
         prediction=prediction_resp,
         scan_time_iso=now_iso,
         js_rendered=False,
-        warning=warning
+        warning=warning,
+        content_preview=content_preview,
+        extracted_text_preview=extracted_text,
+        flagged_snippets=snippets
     )
 
 
@@ -432,11 +463,23 @@ async def scan_batch_urls(
             ))
         else:
             try:
-                pred = service.predict(f_res.html_content or "")
+                b_html = f_res.html_content or ""
+                pred = service.predict(b_html)
+                model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
+                snippets = detect_threat_snippets(
+                    content=b_html,
+                    is_injection=pred.get("is_injection", False),
+                    model_decision_fn=model_fn,
+                    threshold=service.threshold
+                )
+                pred["flagged_snippets"] = snippets
                 prediction_resp = PredictResponse(**pred)
                 completed += 1
                 if pred.get("is_injection"):
                     flagged += 1
+
+                b_preview = b_html[:15000] if len(b_html) > 15000 else b_html
+                b_extracted = strip_html_tags(b_html, max_chars=15000)
 
                 items.append(ScanUrlResponse(
                     url=f_res.url,
@@ -451,7 +494,10 @@ async def scan_batch_urls(
                     error_code=None,
                     redirects_followed=f_res.redirects_followed,
                     prediction=prediction_resp,
-                    scan_time_iso=now_iso
+                    scan_time_iso=now_iso,
+                    content_preview=b_preview,
+                    extracted_text_preview=b_extracted,
+                    flagged_snippets=snippets
                 ))
             except Exception as e:
                 logger.error(f"Batch prediction error for {f_res.url}: {e}")

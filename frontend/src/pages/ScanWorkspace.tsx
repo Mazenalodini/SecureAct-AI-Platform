@@ -31,6 +31,8 @@ import {
   ArrowRight,
   Info
 } from 'lucide-react';
+import { ContentThreatInspector } from '../components/ContentThreatInspector';
+import { DecisionGauge } from '../components/DecisionGauge';
 
 interface ScanWorkspaceProps {
   onScanCompleted: (item: ScanHistoryItem) => void;
@@ -136,8 +138,30 @@ export const ScanWorkspace: React.FC<ScanWorkspaceProps> = ({ onScanCompleted, i
 
   // Presets
   const urlPresets = [
-    { label: language === 'ar' ? 'صفحة توثيق مفتوحة' : 'Open Documentation', url: 'https://en.wikipedia.org/wiki/Cybersecurity' },
-    { label: language === 'ar' ? 'موقع اختبار تجريبي' : 'Sample Web Page', url: 'https://example.com' },
+    { 
+      label: language === 'ar' ? 'صفحة سليمة (CERN WWW)' : 'Benign Page (CERN WWW)', 
+      url: 'https://info.cern.ch/hypertext/WWW/TheProject.html',
+      badge: language === 'ar' ? 'سليم' : 'Benign',
+      color: '#10b981'
+    },
+    { 
+      label: language === 'ar' ? 'هجوم حقن صريح (Jailbreak LLMs)' : 'In-The-Wild Attack (Jailbreak)', 
+      url: 'https://raw.githubusercontent.com/verazuo/jailbreak_llms/main/README.md',
+      badge: language === 'ar' ? 'هجوم' : 'Attack',
+      color: '#f43f5e'
+    },
+    { 
+      label: language === 'ar' ? 'إشارة متفرقة (ويكيبيديا FPR)' : 'Diffuse Signal (Wikipedia FPR)', 
+      url: 'https://en.wikipedia.org/wiki/Computer_security',
+      badge: language === 'ar' ? 'إحصائي' : 'FPR Case',
+      color: '#f59e0b'
+    },
+    { 
+      label: language === 'ar' ? 'اختبار قياسي (HTTPBin)' : 'Standard Test (HTTPBin)', 
+      url: 'https://httpbin.org/html',
+      badge: language === 'ar' ? 'اختبار' : 'Test',
+      color: '#06b6d4'
+    },
   ];
 
   const contentPresets = {
@@ -205,6 +229,10 @@ export const ScanWorkspace: React.FC<ScanWorkspaceProps> = ({ onScanCompleted, i
       setScanStep(3);
       setUrlResult(res);
 
+      setTimeout(() => {
+        resultSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
+
       // Record to history
       const historyItem: ScanHistoryItem = {
         id: `scan_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -250,6 +278,9 @@ export const ScanWorkspace: React.FC<ScanWorkspaceProps> = ({ onScanCompleted, i
     try {
       const res = await scanBatch(lines);
       setBatchResult(res);
+      setTimeout(() => {
+        resultSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
 
       // Save summary item to history
       const historyItem: ScanHistoryItem = {
@@ -284,6 +315,9 @@ export const ScanWorkspace: React.FC<ScanWorkspaceProps> = ({ onScanCompleted, i
     try {
       const res = await predictContent(text);
       setDirectResult(res);
+      setTimeout(() => {
+        resultSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
 
       const historyItem: ScanHistoryItem = {
         id: `text_${Date.now()}`,
@@ -317,6 +351,9 @@ export const ScanWorkspace: React.FC<ScanWorkspaceProps> = ({ onScanCompleted, i
     try {
       const res = await predictFile(selectedFile);
       setDirectResult(res);
+      setTimeout(() => {
+        resultSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 120);
 
       const historyItem: ScanHistoryItem = {
         id: `file_${Date.now()}`,
@@ -425,7 +462,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
       </div>
 
       {/* Scan Mode Switcher Tabs */}
-      <div style={{
+      <div className="mode-switch-container" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -435,7 +472,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
       }}>
         <button
           onClick={() => setActiveMode('url')}
-          className="btn"
+          className="btn mode-switch-btn"
           style={{
             background: activeMode === 'url' ? 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' : 'rgba(15, 23, 42, 0.7)',
             color: '#ffffff',
@@ -452,7 +489,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
 
         <button
           onClick={() => setActiveMode('batch')}
-          className="btn"
+          className="btn mode-switch-btn"
           style={{
             background: activeMode === 'batch' ? 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' : 'rgba(15, 23, 42, 0.7)',
             color: '#ffffff',
@@ -469,7 +506,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
 
         <button
           onClick={() => setActiveMode('direct')}
-          className="btn"
+          className="btn mode-switch-btn"
           style={{
             background: activeMode === 'direct' ? 'linear-gradient(135deg, #0284c7 0%, #2563eb 100%)' : 'rgba(15, 23, 42, 0.7)',
             color: '#ffffff',
@@ -497,13 +534,13 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
                 <Globe size={18} color="#38bdf8" />
                 <span>{t('url_input_label')}</span>
               </label>
-              <span className="badge badge-cyan" style={{ fontSize: '0.78rem' }}>
-                <ShieldCheck size={14} />
+              <span className="badge badge-cyan" style={{ fontSize: '0.78rem', whiteSpace: 'normal', lineHeight: 1.4, maxWidth: '100%', wordBreak: 'break-word' }}>
+                <ShieldCheck size={14} style={{ flexShrink: 0 }} />
                 <span>{t('url_scan_hint')}</span>
               </span>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div className="input-action-row" style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
               <input
                 type="url"
                 value={urlInput}
@@ -511,8 +548,9 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
                 onKeyDown={(e) => { if (e.key === 'Enter') triggerUrlScan(); }}
                 placeholder={t('url_input_placeholder')}
                 style={{
-                  flex: 1,
-                  minWidth: '280px',
+                  flex: '1 1 240px',
+                  width: '100%',
+                  minWidth: 0,
                   padding: '14px 18px',
                   borderRadius: '12px',
                   border: '1px solid var(--border-subtle)',
@@ -527,8 +565,8 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
               <button
                 onClick={() => triggerUrlScan()}
                 disabled={urlLoading || !urlInput.trim()}
-                className="btn btn-primary"
-                style={{ padding: '14px 30px', fontSize: '1rem', minWidth: '170px' }}
+                className="btn btn-primary input-action-btn"
+                style={{ padding: '14px 28px', fontSize: '1rem', flex: '0 0 auto' }}
               >
                 {urlLoading ? (
                   <>
@@ -545,7 +583,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
             </div>
 
             {/* Quick Presets */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', marginBottom: '14px' }}>
               <span style={{ fontSize: '0.84rem', color: 'var(--text-dim)', fontWeight: 600 }}>
                 {t('url_sample_presets')}
               </span>
@@ -554,9 +592,25 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
                   key={idx}
                   onClick={() => { setUrlInput(preset.url); triggerUrlScan(preset.url); }}
                   className="btn btn-secondary"
-                  style={{ padding: '4px 12px', fontSize: '0.8rem', borderRadius: '8px' }}
+                  style={{
+                    padding: '5px 12px',
+                    fontSize: '0.8rem',
+                    borderRadius: '8px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    border: `1px solid ${preset.color}35`,
+                    background: 'rgba(15, 23, 42, 0.65)'
+                  }}
+                  title={preset.url}
                 >
-                  <ExternalLink size={12} />
+                  <span style={{
+                    width: '7px',
+                    height: '7px',
+                    borderRadius: '50%',
+                    background: preset.color,
+                    boxShadow: `0 0 6px ${preset.color}`
+                  }} />
                   <span>{preset.label}</span>
                 </button>
               ))}
@@ -564,7 +618,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
 
             {/* Step progress animation */}
             {urlLoading && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginTop: '20px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginTop: '20px' }}>
                 <div className={`scan-step ${scanStep >= 1 ? (scanStep === 1 ? 'active' : 'completed') : ''}`}>
                   <ShieldCheck size={16} />
                   <span>{language === 'ar' ? '1. فحص النطاق وSSRF' : '1. DNS & SSRF Validation'}</span>
@@ -1029,7 +1083,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
               <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>
                 {t('result_title')}
               </span>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff' }}>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                 {urlResult.url}
               </h3>
             </div>
@@ -1219,39 +1273,46 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
           {urlResult.prediction && (
             <>
               <div className="grid-cols-4" style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
                 gap: '14px',
                 marginBottom: '24px'
               }}>
-                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+                <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_score')}</div>
                   <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: urlResult.prediction.is_injection ? '#fb7185' : '#34d399' }}>
                     {urlResult.prediction.score.toFixed(6)}
                   </div>
                 </div>
 
-                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+                <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_threshold')}</div>
                   <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
                     {urlResult.prediction.threshold.toFixed(6)}
                   </div>
                 </div>
 
-                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+                <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_margin')}</div>
                   <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: urlResult.prediction.margin >= 0 ? '#fb7185' : '#34d399' }}>
                     {(urlResult.prediction.margin >= 0 ? '+' : '') + urlResult.prediction.margin.toFixed(6)}
                   </div>
                 </div>
 
-                <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+                <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
                   <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_fetch_time')}</div>
                   <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc' }}>
                     {urlResult.fetch_time_ms ? `${urlResult.fetch_time_ms} ms` : 'N/A'}
                   </div>
                 </div>
               </div>
+
+              {/* Interactive Decision Boundary Spectrum Gauge */}
+              <DecisionGauge
+                score={urlResult.prediction.score}
+                threshold={urlResult.prediction.threshold}
+                isInjection={urlResult.prediction.is_injection}
+                margin={urlResult.prediction.margin}
+                language={language}
+              />
 
               {/* Technical Fetch Metadata Details */}
               <div style={{
@@ -1267,7 +1328,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
               }}>
                 <div>
                   <span style={{ color: 'var(--text-dim)' }}>{t('res_final_url')}: </span>
-                  <span className="font-mono" style={{ color: '#ffffff' }}>{urlResult.final_url || urlResult.url}</span>
+                  <span className="font-mono" style={{ color: '#ffffff', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>{urlResult.final_url || urlResult.url}</span>
                 </div>
                 <div>
                   <span style={{ color: 'var(--text-dim)' }}>HTTP Status: </span>
@@ -1314,6 +1375,14 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
               }}>
                 {t('res_disclaimer')}
               </div>
+              {/* Content & Threat Inspector */}
+              <ContentThreatInspector 
+                contentPreview={urlResult.content_preview}
+                extractedText={urlResult.extracted_text_preview}
+                flaggedSnippets={urlResult.flagged_snippets || urlResult.prediction?.flagged_snippets || []}
+                targetUrl={urlResult.url}
+                isInjection={urlResult.prediction?.is_injection}
+              />
             </>
           )}
 
@@ -1482,7 +1551,7 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
               <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>
                 {t('result_title')}
               </span>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff' }}>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#ffffff', wordBreak: 'break-all', overflowWrap: 'anywhere' }}>
                 {directResult.filename || (directSubTab === 'text' ? (language === 'ar' ? 'فحص نصي مباشر' : 'Direct Text Inspection') : (selectedFile?.name || 'Uploaded File'))}
               </h3>
             </div>
@@ -1501,39 +1570,46 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
           </div>
 
           <div className="grid-cols-4" style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '14px',
             marginBottom: '24px'
           }}>
-            <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+            <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_score')}</div>
               <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: directResult.is_injection ? '#fb7185' : '#34d399' }}>
                 {directResult.score.toFixed(6)}
               </div>
             </div>
 
-            <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+            <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_threshold')}</div>
               <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
                 {directResult.threshold.toFixed(6)}
               </div>
             </div>
 
-            <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+            <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_margin')}</div>
               <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: directResult.margin >= 0 ? '#fb7185' : '#34d399' }}>
                 {(directResult.margin >= 0 ? '+' : '') + directResult.margin.toFixed(6)}
               </div>
             </div>
 
-            <div style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
+            <div className="kpi-card" style={{ padding: '16px', borderRadius: '12px', background: 'rgba(13, 18, 31, 0.6)', border: '1px solid var(--border-subtle)' }}>
               <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '4px' }}>{t('res_chars')}</div>
               <div className="font-mono" style={{ fontSize: '1.4rem', fontWeight: 800, color: '#f8fafc' }}>
                 {directResult.char_count.toLocaleString()}
               </div>
             </div>
           </div>
+
+          {/* Interactive Decision Boundary Spectrum Gauge */}
+          <DecisionGauge
+            score={directResult.score}
+            threshold={directResult.threshold}
+            isInjection={directResult.is_injection}
+            margin={directResult.margin}
+            language={language}
+          />
 
           <div style={{
             padding: '12px 16px',
@@ -1546,6 +1622,15 @@ Model: SecureAct_AI_v2 (LinearSVC TF-IDF)`;
           }}>
             {t('res_disclaimer')}
           </div>
+
+          {/* Content & Threat Inspector */}
+          <ContentThreatInspector 
+            contentPreview={textContent || ''}
+            extractedText={textContent || ''}
+            flaggedSnippets={directResult.flagged_snippets || []}
+            targetUrl={directResult.filename || (language === 'ar' ? 'تحليل نصي مباشر' : 'Direct Text Input')}
+            isInjection={directResult.is_injection}
+          />
 
           <div className="action-toolbar" style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
             <button
