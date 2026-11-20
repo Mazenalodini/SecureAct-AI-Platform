@@ -12,7 +12,13 @@ import os
 import sys
 import argparse
 from pathlib import Path
+
+# Enable high performance transfer if available without deprecated warnings
+os.environ.pop("HF_HUB_ENABLE_HF_TRANSFER", None)
+os.environ["HF_XET_HIGH_PERFORMANCE"] = "1"
+
 from huggingface_hub import HfApi, create_repo
+from huggingface_hub.utils import HfHubHTTPError
 
 def main():
     parser = argparse.ArgumentParser(description="Upload SecureAct Horizon v3 model to Hugging Face Hub")
@@ -57,7 +63,20 @@ def main():
 
     api = HfApi(token=token)
 
-    # 1. Create or ensure repo exists
+    # 1. Validate token
+    print("[*] Validating access token with Hugging Face...")
+    try:
+        user_info = api.whoami()
+        username = user_info.get("name", "Unknown")
+        print(f"[+] Token verified successfully! Authenticated as: @{username}")
+    except Exception as e:
+        print(f"\n[!] Authentication Error: The provided token is invalid or expired ({e}).")
+        print("    Note: When creating a token on Hugging Face (https://huggingface.co/settings/tokens):")
+        print("    You MUST copy the full token immediately upon creation before closing the dialog.")
+        print("    Once closed, the token is permanently masked (e.g. hf_...XXXX) and cannot be copied again.")
+        sys.exit(1)
+
+    # 2. Create or ensure repo exists
     print(f"[*] Ensuring repository '{repo_id}' exists on Hugging Face...")
     try:
         create_repo(repo_id=repo_id, token=token, private=args.private, exist_ok=True, repo_type="model")
@@ -65,14 +84,15 @@ def main():
     except Exception as e:
         print(f"[!] Warning during repo creation: {e}")
 
-    # 2. Upload folder
+    # 3. Upload files (ignoring __pycache__)
     print(f"[*] Uploading model files (weights ~536MB, config, tokenizer)... This may take 1-3 minutes depending on your internet connection.")
     try:
         api.upload_folder(
             folder_path=str(model_dir),
             repo_id=repo_id,
             repo_type="model",
-            commit_message="feat: upload SecureAct Horizon v3 (ModernBERT 141M) weights & config"
+            commit_message="feat: upload SecureAct Horizon v3 (ModernBERT 141M) weights & config",
+            ignore_patterns=["*__pycache__*", "*.pyc"]
         )
         print(f"\n[SUCCESS] Model successfully uploaded to: https://huggingface.co/{repo_id}")
         print("You can now load this model in python using:")
