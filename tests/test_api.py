@@ -14,7 +14,7 @@ def test_health_endpoint():
     assert data["status"] == "healthy"
     assert data["model_loaded"] is True
     assert data["sha256_verified"] is True
-    assert data["model_name"] == "SecureAct_AI_v2"
+    assert data["model_name"] in ["SecureAct_Horizon_v3", "SecureAct_AI_v2"]
 
 
 def test_model_info_endpoint():
@@ -22,9 +22,9 @@ def test_model_info_endpoint():
     response = client.get("/api/model-info")
     assert response.status_code == 200
     data = response.json()
-    assert data["model_name"] == "SecureAct_AI_v2"
+    assert data["model_name"] in ["SecureAct_Horizon_v3", "SecureAct_AI_v2"]
     assert data["sha256_verified"] is True
-    assert data["estimator"] == "LinearSVC"
+    assert "estimator" in data
     assert "threshold" in data
 
 

@@ -119,24 +119,29 @@ async def health_check():
     """System health check endpoint verifying model readiness."""
     try:
         service = ModelService.get_instance()
+        if not service.is_loaded:
+            try:
+                service.load_model()
+            except Exception:
+                pass
         ds_svc = DeepShieldService.get_instance()
-        is_ready = ds_svc.is_loaded or (service.is_loaded and service.sha256_verified)
+        is_ready = bool(service.is_loaded and service.sha256_verified)
         if not is_ready:
             return JSONResponse(
                 status_code=503,
                 content={
                     "status": "degraded",
                     "model_loaded": False,
-                    "model_name": "SecureAct_Horizon_v3",
+                    "model_name": "SecureAct_Horizon_v3" if ds_svc.is_loaded else "SecureAct_AI_v2",
                     "version": "3.0.0",
                     "sha256_verified": False,
-                    "detail": "Model artifact failed to load."
+                    "detail": "Model artifact failed to load or SHA256 unverified."
                 }
             )
         return HealthResponse(
             status="healthy",
             model_loaded=True,
-            model_name="SecureAct_Horizon_v3",
+            model_name="SecureAct_Horizon_v3" if ds_svc.is_loaded else "SecureAct_AI_v2",
             version="3.0.0",
             sha256_verified=True
         )
