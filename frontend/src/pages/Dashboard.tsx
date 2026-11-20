@@ -96,10 +96,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ modelInfo, metrics, onNavi
           <div style={{ padding: '16px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '12px', border: '1px solid var(--border-subtle)' }}>
             <div style={{ fontSize: '0.78rem', color: 'var(--text-dim)', marginBottom: '4px' }}>{t('dash_estimator')}</div>
             <div className="font-mono" style={{ fontSize: '1.05rem', fontWeight: 700, color: '#f8fafc' }}>
-              {modelInfo?.estimator || 'LinearSVC'} (word+char TF-IDF)
+              {modelInfo?.estimator || 'ModernBERT Multi-Task (141M)'}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-              Feature: 1-2 words & 3-5 chars
+              {modelInfo?.feature_description || 'Chunk-Attention Pooling (8k tokens) + 6 Cyber Forensic Heads'}
             </div>
           </div>
 

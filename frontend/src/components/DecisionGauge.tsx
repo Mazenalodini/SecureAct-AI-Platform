@@ -18,17 +18,35 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
 }) => {
   const isAr = language === 'ar';
 
-  // Normalize score between -2.5 and +2.5 for a 0-100% visual meter
-  const minRange = -2.5;
-  const maxRange = 2.5;
-  const clampedScore = Math.max(minRange, Math.min(maxRange, score));
-  const scorePercent = ((clampedScore - minRange) / (maxRange - minRange)) * 100;
-  
-  const clampedThreshold = Math.max(minRange, Math.min(maxRange, threshold));
-  const thresholdPercent = ((clampedThreshold - minRange) / (maxRange - minRange)) * 100;
+  // Auto-detect probability mode (Horizon v3: threshold in [0, 1]) vs raw score (LinearSVC: threshold < 0)
+  const isProb = threshold >= 0.0 && threshold <= 1.0 && score >= 0.0 && score <= 1.0;
+
+  let scorePercent = 0;
+  let thresholdPercent = 0;
+  let scoreDisplay = '';
+  let threshDisplay = '';
+  let marginDisplay = '';
+
+  if (isProb) {
+    scorePercent = Math.max(0, Math.min(100, score * 100));
+    thresholdPercent = Math.max(0, Math.min(100, threshold * 100));
+    scoreDisplay = `${(score * 100).toFixed(1)}%`;
+    threshDisplay = `${(threshold * 100).toFixed(1)}%`;
+    marginDisplay = `${(margin >= 0 ? '+' : '')}${(margin * 100).toFixed(1)}%`;
+  } else {
+    const minRange = -2.5;
+    const maxRange = 2.5;
+    const clampedScore = Math.max(minRange, Math.min(maxRange, score));
+    scorePercent = ((clampedScore - minRange) / (maxRange - minRange)) * 100;
+    const clampedThreshold = Math.max(minRange, Math.min(maxRange, threshold));
+    thresholdPercent = ((clampedThreshold - minRange) / (maxRange - minRange)) * 100;
+    scoreDisplay = score.toFixed(4);
+    threshDisplay = threshold.toFixed(3);
+    marginDisplay = (margin >= 0 ? '+' : '') + margin.toFixed(4);
+  }
 
   // Determine state
-  const isBorderline = isInjection && margin < 0.25;
+  const isBorderline = isInjection && Math.abs(margin) < (isProb ? 0.08 : 0.25);
   const statusColor = !isInjection ? '#10b981' : isBorderline ? '#f59e0b' : '#f43f5e';
 
   return (
@@ -57,14 +75,16 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
             <ShieldCheck size={17} color="#34d399" />
           )}
           <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#f8fafc' }}>
-            {isAr ? 'مقياس طيف القرار الأمني (Decision Boundary Spectrum)' : 'Security Decision Boundary Spectrum'}
+            {isAr ? 'مقياس طيف التهديد الأمني (Threat Decision Spectrum)' : 'Security Threat Decision Spectrum'}
           </span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
-          <span style={{ color: 'var(--text-dim)' }}>{isAr ? 'المسافة عن العتبة:' : 'Threshold Margin:'}</span>
+          <span style={{ color: 'var(--text-dim)' }}>
+            {isAr ? 'فارق الأمان عن العتبة:' : 'Threshold Margin:'}
+          </span>
           <span className="font-mono" style={{ fontWeight: 800, color: statusColor }}>
-            {(margin >= 0 ? '+' : '') + margin.toFixed(4)}
+            {marginDisplay}
           </span>
         </div>
       </div>
@@ -75,14 +95,14 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
         <div style={{
           height: '10px',
           borderRadius: '5px',
-          background: 'linear-gradient(90deg, #10b981 0%, #10b981 40%, #f59e0b 50%, #f43f5e 65%, #e11d48 100%)',
+          background: 'linear-gradient(90deg, #10b981 0%, #10b981 40%, #f59e0b 65%, #f43f5e 78%, #e11d48 100%)',
           boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.6)',
           position: 'relative'
         }} />
 
         {/* Threshold Cutoff Marker */}
         <div
-          title={`${isAr ? 'عتبة القرار المعتمدة' : 'Operational Threshold'}: ${threshold.toFixed(6)}`}
+          title={`${isAr ? 'عتبة القرار المعتمدة' : 'Operational Threshold'}: ${threshDisplay}`}
           style={{
             position: 'absolute',
             left: `${thresholdPercent}%`,
@@ -110,7 +130,7 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
             whiteSpace: 'nowrap',
             fontWeight: 700
           }}>
-            {threshold.toFixed(3)}
+            {threshDisplay}
           </div>
         </div>
 
@@ -149,7 +169,7 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
             fontWeight: 800,
             whiteSpace: 'nowrap'
           }}>
-            {score.toFixed(4)}
+            {scoreDisplay}
           </div>
         </div>
       </div>
@@ -167,7 +187,7 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
           {isAr ? '← منطقة السلامة (Safe)' : '← Safe Zone'}
         </span>
         <span style={{ color: '#fbbf24', fontWeight: 600 }}>
-          {isAr ? 'منطقة الحذر الإحصائي (FPR)' : 'Borderline / FPR Window'}
+          {isAr ? 'عتبة الفصل الأمني' : 'Threshold Gate'}
         </span>
         <span style={{ color: '#fb7185', fontWeight: 600 }}>
           {isAr ? 'منطقة التهديد الصريح (Threat) →' : 'Threat Zone →'}
@@ -176,5 +196,5 @@ export const DecisionGauge: React.FC<DecisionGaugeProps> = ({
     </div>
   );
 };
-export default DecisionGauge;
 
+export default DecisionGauge;

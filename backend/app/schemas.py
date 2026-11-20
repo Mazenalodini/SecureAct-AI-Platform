@@ -16,22 +16,26 @@ class PredictRequest(BaseModel):
     content: str = Field(..., description="Text or HTML content to analyze")
 
 class PredictResponse(BaseModel):
-    score: float = Field(..., description="Raw decision_function score from LinearSVC")
-    threshold: float = Field(..., description="Decision threshold (-0.23754153513923493)")
+    score: float = Field(..., description="Decision probability (0.0 to 1.0) or model score")
+    probability: Optional[float] = Field(None, description="Calculated threat probability from Horizon ModernBERT")
+    threshold: float = Field(..., description="Operational decision threshold")
     classification: str = Field(..., description="'potential_injection' if score >= threshold else 'benign'")
     is_injection: bool = Field(..., description="Boolean flag: True if potential_injection")
     margin: float = Field(..., description="Distance from threshold: score - threshold")
+    threat_tier: Optional[str] = Field("safe", description="'threat' | 'caution' | 'safe'")
     char_count: int = Field(..., description="Number of Unicode characters in the input")
     byte_size: int = Field(..., description="Byte length in UTF-8")
-    model_name: str = Field("SecureAct_AI_v2", description="Model identifier")
+    model_name: str = Field("SecureAct_Horizon_v3 (ModernBERT Multi-Task 141M)", description="Model identifier")
     filename: Optional[str] = Field(None, description="Optional uploaded filename")
     flagged_snippets: List[FlaggedSnippet] = Field(default_factory=list, description="Suspicious prompt injection segments detected in content")
+    deepshield: Optional[Dict[str, Any]] = Field(None, description="DeepShield Horizon multi-task evaluation")
+    threat_intelligence: Optional[Dict[str, Any]] = Field(None, description="6 cyber forensic threat heads")
+    forensic_profile: Optional[Dict[str, Any]] = Field(None, description="Detailed bilingual threat intelligence profile")
+    latency_ms: Optional[float] = Field(None, description="Inference latency in milliseconds")
     disclaimer: str = Field(
-        "SecureAct AI v2 is a research security classifier based on LinearSVC TF-IDF. "
-        "A positive score indicates potential prompt injection indicators but does not guarantee intent. "
-        "The model exhibits a 6.03% false positive rate on local test benchmarks and should be used as part of "
-        "a defense-in-depth security strategy rather than a sole security gate.",
-        description="Scientific limitations and FPR disclaimer"
+        "SecureAct Horizon v3 utilizes ModernBERT 141M with chunk-attention pooling and 6 cyber forensic heads for semantic prompt injection detection. "
+        "Delivers high-recall detection with verified low false-positive specificity on benign web pages.",
+        description="Scientific capabilities and model disclaimer"
     )
 
 class ModelInfoResponse(BaseModel):

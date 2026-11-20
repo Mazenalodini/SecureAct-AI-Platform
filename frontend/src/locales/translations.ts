@@ -14,7 +14,7 @@ export const translations = {
 
     // Primary Scanner Hero & Tabs
     scanner_hero_title: "منصة فحص أمان صفحات الويب والمحتوى",
-    scanner_hero_desc: "افحص صفحات الويب مباشرة عبر الرابط، أو حلل الأكواد والنصوص والمستندات لكشف هجمات حقن التعليمات (Prompt Injection) بدقة عبر النموذج الحقيقي SecureAct AI v2.",
+    scanner_hero_desc: "افحص صفحات الويب مباشرة عبر الرابط، أو حلل الأكواد والنصوص والمستندات لكشف هجمات حقن التعليمات (Prompt Injection) بدقة متقدمة عبر نموذج SecureAct Horizon v3 (ModernBERT 141M).",
     tab_url_scan: "فحص رابط ويب (URL)",
     tab_batch_scan: "فحص روابط متعددة (Batch)",
     tab_direct_content: "نص مباشر أو رفع ملف",
@@ -71,7 +71,7 @@ export const translations = {
     res_bytes: "حجم البيانات المسترجعة",
     res_redirects: "عدد التحويلات",
     res_explanation_title: "تفسير النتيجة وحدود النموذج",
-    res_disclaimer: "تنبيه علمي وأمني: هذا النموذج أداة مساعدة مبنية على خصائص TF-IDF للكلمات والأحرف. لا تعني نتيجة الفحص سلامة مطلقة من كافة الاختراقات، حيث يسجل النموذج معدل إنذار كاذب قدره 6.03% على المعيار المرجعي. يُوصى بتطبيقه ضمن استراتيجية الدفاع في العمق.",
+    res_disclaimer: "تنبيه علمي وأمني: يعتمد فحص الأمان على نموذج SecureAct Horizon v3 (ModernBERT 141M) بنظام انتباه مقطعي متقدم واستخبارات جنائية متعددة المهام. لا تعني النتيجة سلامة مطلقة من كافة النواقل المستحدثة، ويُوصى دائماً بتطبيق ضوابط أمنية متعددة الطبقات ضمن استراتيجية الدفاع في العمق.",
     res_spa_warning: "تنبيه: قد تعتمد هذه الصفحة على JavaScript ديناميكي لعرض المحتوى الكامل (SPA). تم فحص كود HTML الأولي المسترجع فقط.",
     
     // Actions & Reports
@@ -253,7 +253,7 @@ export const translations = {
 
     // Primary Scanner Hero & Tabs
     scanner_hero_title: "Web Page & Content Security Scanner",
-    scanner_hero_desc: "Directly inspect live web pages by URL, or analyze HTML snippets and documents for prompt injection attacks using the authentic SecureAct AI v2 LinearSVC model.",
+    scanner_hero_desc: "Directly inspect live web pages by URL, or analyze HTML snippets and documents for prompt injection attacks using the advanced SecureAct Horizon v3 (ModernBERT 141M) model.",
     tab_url_scan: "Web URL Scanner",
     tab_batch_scan: "Batch URL Scanner",
     tab_direct_content: "Direct Text / File Upload",
@@ -310,7 +310,7 @@ export const translations = {
     res_bytes: "Byte Size (UTF-8)",
     res_redirects: "Redirects Followed",
     res_explanation_title: "Decision Rationale & Boundary Disclosure",
-    res_disclaimer: "Scientific & Security Notice: This classifier utilizes surface TF-IDF n-grams over character and word distributions. A clear scan does not guarantee absolute safety. The model exhibits a 6.03% False Positive Rate on benchmark tests and should be employed within a defense-in-depth architecture.",
+    res_disclaimer: "Scientific & Security Notice: Security evaluation is powered by SecureAct Horizon v3 (ModernBERT 141M) with chunk-attention pooling and multi-task cyber forensic heads. A clean verdict does not guarantee absolute immunity from novel vectors; layered defense-in-depth is strongly recommended.",
     res_spa_warning: "Notice: This page may rely on client-side JavaScript (SPA) to render full dynamic content. Only initial static HTML was inspected.",
 
     // Actions & Reports

@@ -57,11 +57,20 @@ THREAT_PATTERNS = [
     {
         "category": "delimiter_injection",
         "pattern": re.compile(
-            r"(<\|im_start\|>|<\|im_end\|>|\[SYSTEM\]|\[INST\]|\[\/INST\]|###\s*(Instruction|System|Human|Assistant)|```system)"
+            r"(?i)(<\|im_start\|>|<\|im_end\|>|\[system\]|\[assistant\]|\[INST\]|\[\/INST\]|###\s*(Instruction|System|Human|Assistant)|```system|\[system\]\(#[^\)]+\))"
         ),
         "risk_level": "high",
-        "reason_ar": "حقن فواصل نظام خاصة (Special Prompt Delimiters) لمحاكاة قنوات تحكم النظام.",
-        "reason_en": "Injection of special format delimiters to impersonate internal control channels.",
+        "reason_ar": "حقن فواصل ورسائل نظام خاصة (System Delimiters) لمحاكاة قنوات تحكم المساعد الذكي.",
+        "reason_en": "Injection of special format delimiters to impersonate internal system control channels.",
+    },
+    {
+        "category": "unrestricted_bot_lure",
+        "pattern": re.compile(
+            r"(?i)\b(unrestricted\s+(?:AI|bot|model|assistant)|secret\s+agenda|not\s+restricted\s+by\s+the\s+rules|forced\s+to\s+pursue|exfiltrat\w+)\b"
+        ),
+        "risk_level": "high",
+        "reason_ar": "استدراج المساعد لتقمص بوت غير مقيد أو تنفيذ أجندة تسريب بيانات سرية.",
+        "reason_en": "Coercing AI agent into unrestricted persona or covert data exfiltration agenda.",
     },
     {
         "category": "secret_exfiltration",

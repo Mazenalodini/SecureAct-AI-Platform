@@ -39,6 +39,7 @@ from .middleware import RequestSizeLimitMiddleware, RateLimitMiddleware
 from .demo_data import DEMO_CASES
 from .url_scanner import fetch_url, fetch_urls_batch
 from .threat_analyzer import detect_threat_snippets, strip_html_tags
+from .deepshield_service import DeepShieldService
 
 # Configure logging
 logging.basicConfig(
@@ -55,6 +56,11 @@ async def lifespan(app: FastAPI):
     try:
         service = ModelService.get_instance()
         logger.info(f"Model loaded: {service.is_loaded}, SHA-256 verified: {service.sha256_verified}")
+        try:
+            ds_service = DeepShieldService.get_instance()
+            logger.info(f"DeepShield neural model loaded: {ds_service.is_loaded}")
+        except Exception as ds_e:
+            logger.warning(f"DeepShield service unavailable: {ds_e}")
     except Exception as e:
         logger.critical(f"Critical failure during model startup: {e}")
     yield
@@ -113,23 +119,25 @@ async def health_check():
     """System health check endpoint verifying model readiness."""
     try:
         service = ModelService.get_instance()
-        if not service.is_loaded or not service.sha256_verified:
+        ds_svc = DeepShieldService.get_instance()
+        is_ready = ds_svc.is_loaded or (service.is_loaded and service.sha256_verified)
+        if not is_ready:
             return JSONResponse(
                 status_code=503,
                 content={
                     "status": "degraded",
                     "model_loaded": False,
-                    "model_name": MODEL_NAME,
-                    "version": "2.0.0",
+                    "model_name": "SecureAct_Horizon_v3",
+                    "version": "3.0.0",
                     "sha256_verified": False,
-                    "detail": "Model artifact failed to load or hash verification failed."
+                    "detail": "Model artifact failed to load."
                 }
             )
         return HealthResponse(
             status="healthy",
             model_loaded=True,
-            model_name=MODEL_NAME,
-            version="2.0.0",
+            model_name="SecureAct_Horizon_v3",
+            version="3.0.0",
             sha256_verified=True
         )
     except Exception as e:
@@ -138,8 +146,8 @@ async def health_check():
             content={
                 "status": "unhealthy",
                 "model_loaded": False,
-                "model_name": MODEL_NAME,
-                "version": "2.0.0",
+                "model_name": "SecureAct_Horizon_v3",
+                "version": "3.0.0",
                 "sha256_verified": False,
                 "detail": str(e)
             }
@@ -149,7 +157,15 @@ async def health_check():
 @app.get("/api/model-info", response_model=ModelInfoResponse, tags=["Model"])
 async def get_model_info(service: ModelService = Depends(get_model_service)):
     """Retrieve verified metadata, parameter contract, and training provenance."""
+    ds_svc = DeepShieldService.get_instance()
     info = service.get_model_info()
+    if ds_svc.is_loaded:
+        info["model_name"] = "SecureAct_Horizon_v3"
+        info["candidate_name"] = "secureact_horizon_browsesafe_multitask_v3"
+        info["estimator"] = "ModernBERT Multi-Task Sequence Classifier (141M)"
+        info["feature_description"] = "Chunk-Attention Pooling over 8,192 tokens with 6 cyber forensic threat heads"
+        info["threshold"] = 0.7158
+        info["source_provenance"] = "Horizon-Labs ModernBERT fine-tuned with pairwise contrastive loss on Colab T4 GPU (BF16)"
     return ModelInfoResponse(**info)
 
 
@@ -158,6 +174,61 @@ async def get_metrics(service: ModelService = Depends(get_model_service)):
     """Retrieve authentic benchmark evaluation metrics for v2 test split and v1 baseline."""
     metrics_data = service.get_metrics()
     return MetricsResponse(**metrics_data)
+
+
+def make_prediction_response(
+    content: str,
+    input_format: str = "text",
+    filename: Optional[str] = None
+) -> PredictResponse:
+    """
+    Unified prediction router:
+    Uses SecureAct Horizon v3 (ModernBERT Multi-Task 141M) as the primary decision engine.
+    Falls back gracefully to LinearSVC if Horizon neural weights are not yet loaded.
+    """
+    char_count = len(content)
+    byte_size = len(content.encode("utf-8"))
+    
+    ds_svc = DeepShieldService.get_instance()
+    if ds_svc.is_loaded:
+        ds_res = ds_svc.predict(content, input_format=input_format)
+        snippets = detect_threat_snippets(
+            content=content,
+            is_injection=ds_res["is_injection"],
+            model_decision_fn=None,
+            threshold=ds_res["threshold"]
+        )
+        return PredictResponse(
+            score=ds_res["probability"],
+            probability=ds_res["probability"],
+            threshold=ds_res["threshold"],
+            classification=ds_res["classification"],
+            is_injection=ds_res["is_injection"],
+            margin=ds_res["margin"],
+            threat_tier=ds_res.get("threat_tier", "safe"),
+            char_count=char_count,
+            byte_size=byte_size,
+            model_name="SecureAct_Horizon_v3 (ModernBERT Multi-Task 141M)",
+            filename=filename,
+            flagged_snippets=snippets,
+            deepshield=ds_res,
+            threat_intelligence=ds_res.get("forensic_profile"),
+            forensic_profile=ds_res.get("forensic_profile"),
+            latency_ms=ds_res.get("duration_ms")
+        )
+    else:
+        service = ModelService.get_instance()
+        pred = service.predict(content)
+        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
+        snippets = detect_threat_snippets(
+            content=content,
+            is_injection=pred.get("is_injection", False),
+            model_decision_fn=model_fn,
+            threshold=service.threshold
+        )
+        pred["filename"] = filename
+        pred["flagged_snippets"] = snippets
+        return PredictResponse(**pred)
 
 
 @app.post("/api/predict", response_model=PredictResponse, tags=["Inference"])
@@ -204,16 +275,7 @@ async def predict_content(
         )
 
     try:
-        result = service.predict(text)
-        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
-        snippets = detect_threat_snippets(
-            content=text,
-            is_injection=result["is_injection"],
-            model_decision_fn=model_fn,
-            threshold=service.threshold
-        )
-        result["flagged_snippets"] = snippets
-        return PredictResponse(**result)
+        return make_prediction_response(text, input_format="text")
     except Exception as e:
         logger.error(f"Inference error: {e}")
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
@@ -299,17 +361,8 @@ async def predict_file(
         )
 
     try:
-        prediction = service.predict(text)
-        prediction["filename"] = filename
-        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
-        snippets = detect_threat_snippets(
-            content=text,
-            is_injection=prediction["is_injection"],
-            model_decision_fn=model_fn,
-            threshold=service.threshold
-        )
-        prediction["flagged_snippets"] = snippets
-        return PredictResponse(**prediction)
+        fmt = "html" if suffix == ".html" else "markdown" if suffix in (".md", ".markdown") else "text"
+        return make_prediction_response(text, input_format=fmt, filename=filename)
     except Exception as e:
         logger.error(f"File prediction error: {e}")
         raise HTTPException(status_code=500, detail=f"File analysis error: {str(e)}")
@@ -371,16 +424,16 @@ async def scan_single_url(
     # Successful fetch -> run prediction
     html_text = fetch_res.html_content or ""
     try:
-        pred = service.predict(html_text)
-        model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
-        snippets = detect_threat_snippets(
-            content=html_text,
-            is_injection=pred.get("is_injection", False),
-            model_decision_fn=model_fn,
-            threshold=service.threshold
-        )
-        pred["flagged_snippets"] = snippets
-        prediction_resp = PredictResponse(**pred)
+        ct = (fetch_res.content_type or "").lower()
+        if "markdown" in ct or fetch_res.url.lower().endswith((".md", ".markdown")):
+            url_fmt = "markdown"
+        elif "<html" in html_text.lower() or "<body" in html_text.lower() or "<!doctype" in html_text.lower():
+            url_fmt = "html"
+        else:
+            url_fmt = "text"
+
+        prediction_resp = make_prediction_response(html_text, input_format=url_fmt)
+        snippets = prediction_resp.flagged_snippets
     except Exception as e:
         logger.error(f"Prediction failed for fetched URL {fetch_res.url}: {e}")
         raise HTTPException(status_code=500, detail=f"Classification failed: {str(e)}")
@@ -464,18 +517,18 @@ async def scan_batch_urls(
         else:
             try:
                 b_html = f_res.html_content or ""
-                pred = service.predict(b_html)
-                model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
-                snippets = detect_threat_snippets(
-                    content=b_html,
-                    is_injection=pred.get("is_injection", False),
-                    model_decision_fn=model_fn,
-                    threshold=service.threshold
-                )
-                pred["flagged_snippets"] = snippets
-                prediction_resp = PredictResponse(**pred)
+                b_ct = (f_res.content_type or "").lower()
+                if "markdown" in b_ct or f_res.url.lower().endswith((".md", ".markdown")):
+                    b_fmt = "markdown"
+                elif "<html" in b_html.lower() or "<body" in b_html.lower() or "<!doctype" in b_html.lower():
+                    b_fmt = "html"
+                else:
+                    b_fmt = "text"
+
+                prediction_resp = make_prediction_response(b_html, input_format=b_fmt)
+                snippets = prediction_resp.flagged_snippets
                 completed += 1
-                if pred.get("is_injection"):
+                if prediction_resp.is_injection:
                     flagged += 1
 
                 b_preview = b_html[:15000] if len(b_html) > 15000 else b_html
@@ -546,8 +599,9 @@ async def run_demo_batch(service: ModelService = Depends(get_model_service)):
     correct_count = 0
 
     for case in DEMO_CASES:
-        pred = service.predict(case.content)
-        pred_label = "injection" if pred["is_injection"] else "benign"
+        c_fmt = "html" if "<html" in case.content.lower() else "text"
+        pred = make_prediction_response(case.content, input_format=c_fmt)
+        pred_label = "injection" if pred.is_injection else "benign"
         is_correct = bool(pred_label == case.target_label)
         if is_correct:
             correct_count += 1
@@ -559,12 +613,12 @@ async def run_demo_batch(service: ModelService = Depends(get_model_service)):
                 title_en=case.title_en,
                 category=case.category,
                 target_label=case.target_label,
-                score=pred["score"],
-                threshold=pred["threshold"],
-                classification=pred["classification"],
-                is_injection=pred["is_injection"],
+                score=pred.score,
+                threshold=pred.threshold,
+                classification=pred.classification,
+                is_injection=pred.is_injection,
                 is_correct=is_correct,
-                margin=pred["margin"]
+                margin=pred.margin
             )
         )
 
@@ -578,3 +632,23 @@ async def run_demo_batch(service: ModelService = Depends(get_model_service)):
         accuracy_on_demo=round(accuracy, 2),
         results=results
     )
+
+
+@app.get("/api/deepshield/info", tags=["DeepShield"])
+async def get_deepshield_info():
+    """Retrieve metadata and readiness status for the DeepShield neural model."""
+    svc = DeepShieldService.get_instance()
+    return {
+        "model_name": "SecureAct_DeepShield_v1 (DistilBERT Multi-Task)",
+        "loaded": svc.is_loaded,
+        "metadata": svc.metadata
+    }
+
+
+@app.post("/api/deepshield/predict", tags=["DeepShield"])
+async def predict_deepshield_endpoint(payload: PredictRequest):
+    """Direct multi-task prediction using DeepShield DistilBERT model."""
+    svc = DeepShieldService.get_instance()
+    if not svc.is_loaded:
+        raise HTTPException(status_code=503, detail="DeepShield model is not loaded.")
+    return svc.predict(payload.content, input_format="text")

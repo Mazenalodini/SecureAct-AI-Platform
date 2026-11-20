@@ -46,6 +46,8 @@ tests/diagnose_urls.py
 # Reference archives and training data
 reference_inputs/
 *.zip
+SecureAct_DeepShield_Local/
+*.safetensors
 
 # Vercel deployment cache
 .vercel/

@@ -28,7 +28,6 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
     { id: 'scanner', label: t('nav_scanner'), icon: Search },
     { id: 'history', label: t('nav_history'), icon: History, badge: historyCount > 0 ? historyCount : undefined },
     { id: 'demo', label: t('nav_demo_cases'), icon: Terminal },
-    { id: 'methodology', label: t('nav_methodology'), icon: BookOpen },
   ];
 
   const isHealthy = health?.model_loaded && health?.sha256_verified;
@@ -97,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab, health,
                 color: '#38bdf8',
                 border: '1px solid rgba(56, 189, 248, 0.3)',
                 fontWeight: 700
-              }}>v2.0</span>
+              }}>v3.0 Horizon</span>
             </div>
             <div className="brand-subtitle-text" style={{ fontSize: '0.78rem', color: 'var(--text-dim)', fontWeight: 500, marginTop: '2px' }}>
               {t('platform_subtitle')}

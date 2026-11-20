@@ -25,7 +25,7 @@ export const Footer: React.FC = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)', fontWeight: 700, fontSize: '1rem', marginBottom: '10px' }}>
               <ShieldCheck size={18} color="#06b6d4" />
-              <span>SecureAct AI Platform v2</span>
+              <span>SecureAct AI Platform v3.0 (Horizon)</span>
             </div>
             <p style={{ lineHeight: 1.6, color: 'var(--text-dim)' }}>
               {t('footer_text')}
@@ -49,9 +49,9 @@ export const Footer: React.FC = () => {
               {t('dash_model_status')}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem' }}>
-              <span style={{ color: 'var(--text-dim)' }}>Architecture: LinearSVC TF-IDF (word+char)</span>
-              <span style={{ color: 'var(--text-dim)' }}>Threshold: -0.2375415</span>
-              <span style={{ color: 'var(--text-dim)' }}>Corpus: BrowseSafe++ (CC BY 4.0)</span>
+              <span style={{ color: 'var(--text-dim)' }}>Engine: SecureAct Horizon v3 (ModernBERT 141M)</span>
+              <span style={{ color: 'var(--text-dim)' }}>Context: 8,192 Tokens with Chunk-Attention Pooling</span>
+              <span style={{ color: 'var(--text-dim)' }}>Intelligence: 6 Cyber Forensic Threat Heads</span>
             </div>
           </div>
         </div>

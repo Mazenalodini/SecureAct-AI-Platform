@@ -5,7 +5,6 @@ import { Footer } from './components/Footer';
 import { ScanWorkspace } from './pages/ScanWorkspace';
 import { HistoryPage } from './pages/HistoryPage';
 import { DemoCases } from './pages/DemoCases';
-import { Methodology } from './pages/Methodology';
 import { checkHealth, getModelInfo, getMetrics } from './services/api';
 import { HealthStatus, ModelInfo, MetricsData, ScanHistoryItem } from './types';
 
@@ -119,12 +118,6 @@ export const AppContent: React.FC = () => {
         {activeTab === 'demo' && (
           <div className="container">
             <DemoCases />
-          </div>
-        )}
-
-        {activeTab === 'methodology' && (
-          <div className="container">
-            <Methodology modelInfo={modelInfo} metrics={metrics} />
           </div>
         )}
       </main>

@@ -9,6 +9,29 @@ export interface FlaggedSnippet {
   score?: number | null;
 }
 
+export interface DeepShieldResult {
+  model_name: string;
+  is_injection: boolean;
+  threat_tier?: 'safe' | 'caution' | 'threat';
+  classification: 'potential_injection' | 'benign';
+  probability: number;
+  raw_probability: number;
+  threshold: number;
+  margin: number;
+  attack_type?: string | null;
+  goal_class?: string | null;
+  risk_category?: string | null;
+  injection_strategy?: string | null;
+  linguistic_style?: string | null;
+  requires_action_tools?: string | null;
+  forensic_profile?: Record<string, { code: string; label_ar: string; label_en: string; confidence: number }>;
+  task_confidences?: Record<string, number>;
+  raw_task_predictions?: Record<string, string>;
+  chunk_attention?: number[];
+  suspicious_chunk_index?: number;
+  duration_ms: number;
+}
+
 export interface PredictResponse {
   score: number;
   threshold: number;
@@ -21,6 +44,7 @@ export interface PredictResponse {
   disclaimer: string;
   filename?: string;
   flagged_snippets?: FlaggedSnippet[];
+  deepshield?: DeepShieldResult;
 }
 
 export interface ModelInfo {

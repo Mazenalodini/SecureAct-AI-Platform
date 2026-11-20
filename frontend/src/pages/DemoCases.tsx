@@ -229,10 +229,16 @@ export const DemoCases: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <div style={{ textAlign: 'right', fontSize: '0.82rem' }}>
                       <div style={{ color: 'var(--text-dim)' }}>
-                        {t('demo_score_label')} <span className="font-mono" style={{ color: 'var(--text-main)', fontWeight: 700 }}>{res.score.toFixed(4)}</span>
+                        {res.threshold <= 1.0 ? (language === 'ar' ? 'الاحتمالية:' : 'Probability:') : t('demo_score_label')}{' '}
+                        <span className="font-mono" style={{ color: 'var(--text-main)', fontWeight: 700 }}>
+                          {res.score <= 1.0 ? `${(res.score * 100).toFixed(1)}%` : res.score.toFixed(4)}
+                        </span>
                       </div>
                       <div style={{ color: 'var(--text-dim)' }}>
-                        {t('demo_threshold_label')} <span className="font-mono">{res.threshold.toFixed(4)}</span>
+                        {t('demo_threshold_label')}{' '}
+                        <span className="font-mono">
+                          {res.threshold <= 1.0 ? `${(res.threshold * 100).toFixed(1)}%` : res.threshold.toFixed(4)}
+                        </span>
                       </div>
                     </div>
 
