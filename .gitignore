@@ -48,6 +48,8 @@ reference_inputs/
 *.zip
 SecureAct_DeepShield_Local/
 *.safetensors
+bin/
+*.exe
 
 # Vercel deployment cache
 .vercel/

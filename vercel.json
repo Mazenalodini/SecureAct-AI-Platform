@@ -12,19 +12,19 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/api/index.py"
+      "destination": "https://hewlett-fourth-collaboration-limits.trycloudflare.com/api/$1"
     },
     {
       "source": "/health",
-      "destination": "/api/index.py"
+      "destination": "https://hewlett-fourth-collaboration-limits.trycloudflare.com/health"
     },
     {
       "source": "/docs",
-      "destination": "/api/index.py"
+      "destination": "https://hewlett-fourth-collaboration-limits.trycloudflare.com/docs"
     },
     {
       "source": "/openapi.json",
-      "destination": "/api/index.py"
+      "destination": "https://hewlett-fourth-collaboration-limits.trycloudflare.com/openapi.json"
     }
   ]
 }

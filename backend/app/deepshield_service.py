@@ -124,8 +124,17 @@ class DeepShieldService:
 
     def _load(self) -> None:
         if not self.artifact_dir.exists():
-            logger.warning(f"Horizon artifact directory {self.artifact_dir} does not exist.")
-            return
+            logger.info(f"Local artifact directory {self.artifact_dir} not found. Attempting auto-fetch from Hugging Face Hub...")
+            hf_repo = os.environ.get("HF_MODEL_REPO", "lufy77/secureact-horizon-v3")
+            try:
+                from huggingface_hub import snapshot_download
+                logger.info(f"Downloading/caching model from Hugging Face Hub: '{hf_repo}'...")
+                downloaded_dir = Path(snapshot_download(repo_id=hf_repo))
+                self.artifact_dir = downloaded_dir
+                logger.info(f"Successfully loaded model from Hugging Face Hub cache: {downloaded_dir}")
+            except Exception as dl_err:
+                logger.warning(f"Failed to auto-fetch model from Hugging Face Hub: {dl_err}")
+                return
 
         try:
             logger.info(f"Loading SecureAct Horizon Multi-Task model from {self.artifact_dir}...")
