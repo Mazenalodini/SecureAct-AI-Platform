@@ -169,31 +169,57 @@ class DeepShieldService:
         hf_repo = os.environ.get("HF_MODEL_REPO", "lufy77/secureact-horizon-v3")
         hf_token = os.environ.get("HF_TOKEN", "")
 
-        router_url = f"https://router.huggingface.co/hf-inference/models/{hf_repo}"
+        endpoints = [
+            f"https://api-inference.huggingface.co/models/{hf_repo}",
+            f"https://router.huggingface.co/hf-inference/models/{hf_repo}"
+        ]
+
         headers = {"Content-Type": "application/json"}
         if hf_token:
             headers["Authorization"] = f"Bearer {hf_token}"
 
         clean_text = content[:4000]
         threat_prob = 0.0
+        last_error = None
+        success = False
 
         try:
             import httpx
-            with httpx.Client(timeout=25.0) as client:
-                resp = client.post(router_url, headers=headers, json={"inputs": clean_text})
-                if resp.status_code == 200:
-                    data = resp.json()
-                    # HF text classification pipeline returns [[{"label": "...", "score": ...}]]
-                    items = data[0] if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list) else (data if isinstance(data, list) else [])
-                    for item in items:
-                        if isinstance(item, dict) and item.get("label") == "INJECTION":
-                            threat_prob = float(item.get("score", 0.0))
-                            break
-                        elif isinstance(item, dict) and item.get("label") == "SAFE" and len(items) == 1:
-                            threat_prob = 1.0 - float(item.get("score", 0.0))
-                else:
-                    logger.warning(f"HF Router returned status {resp.status_code}: {resp.text[:200]}")
-                    raise RuntimeError(f"HF Router returned HTTP {resp.status_code}")
+            with httpx.Client(timeout=30.0) as client:
+                for endpoint_url in endpoints:
+                    try:
+                        resp = client.post(
+                            endpoint_url,
+                            headers=headers,
+                            json={"inputs": clean_text, "options": {"wait_for_model": True, "use_cache": True}}
+                        )
+                        if resp.status_code == 200:
+                            data = resp.json()
+                            # HF text classification pipeline returns [[{"label": "...", "score": ...}]]
+                            items = data[0] if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list) else (data if isinstance(data, list) else [])
+                            for item in items:
+                                if isinstance(item, dict):
+                                    lbl = str(item.get("label", "")).upper()
+                                    score = float(item.get("score", 0.0))
+                                    if lbl in ("INJECTION", "LABEL_1", "THREAT", "ATTACK"):
+                                        threat_prob = score
+                                        success = True
+                                        break
+                                    elif lbl in ("SAFE", "LABEL_0", "BENIGN") and len(items) == 1:
+                                        threat_prob = 1.0 - score
+                                        success = True
+                            if success or len(items) > 0:
+                                success = True
+                                break
+                        else:
+                            last_error = f"{endpoint_url} returned {resp.status_code}: {resp.text[:200]}"
+                            logger.warning(f"HF inference attempt failed: {last_error}")
+                    except Exception as sub_e:
+                        last_error = f"{endpoint_url} error: {sub_e}"
+                        logger.warning(f"HF inference connection failed: {last_error}")
+
+            if not success:
+                raise RuntimeError(f"All HF endpoints failed. Last error: {last_error}")
         except Exception as e:
             logger.warning(f"Cloud neural inference call failed: {e}")
             raise
