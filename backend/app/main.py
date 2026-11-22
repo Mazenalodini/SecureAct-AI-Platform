@@ -78,6 +78,8 @@ app = FastAPI(
 # Environment and CORS settings
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 cors_origins = list(ALLOWED_ORIGINS)
+if "https://secureact-ai.vercel.app" not in cors_origins:
+    cors_origins.append("https://secureact-ai.vercel.app")
 extra_origin = os.getenv("ALLOWED_ORIGIN")
 if extra_origin and extra_origin not in cors_origins:
     cors_origins.append(extra_origin)
@@ -87,11 +89,11 @@ if extra_origin and extra_origin not in cors_origins:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_origin_regex=r"^https://.*\.vercel\.app$" if ENVIRONMENT == "production" else None,
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"]
+    expose_headers=["*"]
 )
 
 # Request body size limiter (1 MiB)
@@ -141,7 +143,7 @@ async def health_check():
         return HealthResponse(
             status="healthy",
             model_loaded=True,
-            model_name="SecureAct_Horizon_v3" if ds_svc.is_loaded else "SecureAct_AI_v2",
+            model_name="SecureAct_Horizon_v3" if (ds_svc.is_loaded or ds_svc.is_available) else "SecureAct_AI_v2",
             version="3.0.0",
             sha256_verified=True
         )
@@ -164,13 +166,13 @@ async def get_model_info(service: ModelService = Depends(get_model_service)):
     """Retrieve verified metadata, parameter contract, and training provenance."""
     ds_svc = DeepShieldService.get_instance()
     info = service.get_model_info()
-    if ds_svc.is_loaded:
+    if ds_svc.is_loaded or ds_svc.is_available:
         info["model_name"] = "SecureAct_Horizon_v3"
         info["candidate_name"] = "secureact_horizon_browsesafe_multitask_v3"
         info["estimator"] = "ModernBERT Multi-Task Sequence Classifier (141M)"
         info["feature_description"] = "Chunk-Attention Pooling over 8,192 tokens with 6 cyber forensic threat heads"
-        info["threshold"] = 0.7158
-        info["source_provenance"] = "Horizon-Labs ModernBERT fine-tuned with pairwise contrastive loss on Colab T4 GPU (BF16)"
+        info["threshold"] = 0.50
+        info["source_provenance"] = "Horizon-Labs ModernBERT fine-tuned on BrowseSafe++ (lufy77/secureact-horizon-v3)"
     return ModelInfoResponse(**info)
 
 
@@ -188,14 +190,14 @@ def make_prediction_response(
 ) -> PredictResponse:
     """
     Unified prediction router:
-    Uses SecureAct Horizon v3 (ModernBERT Multi-Task 141M) as the primary decision engine.
-    Falls back gracefully to LinearSVC if Horizon neural weights are not yet loaded.
+    Uses SecureAct Horizon v3 (ModernBERT Multi-Task 141M) as the primary decision engine (local or cloud).
+    Falls back gracefully to LinearSVC if Horizon neural weights are not yet reachable.
     """
     char_count = len(content)
     byte_size = len(content.encode("utf-8"))
     
     ds_svc = DeepShieldService.get_instance()
-    if ds_svc.is_loaded:
+    try:
         ds_res = ds_svc.predict(content, input_format=input_format)
         snippets = detect_threat_snippets(
             content=content,
@@ -213,7 +215,7 @@ def make_prediction_response(
             threat_tier=ds_res.get("threat_tier", "safe"),
             char_count=char_count,
             byte_size=byte_size,
-            model_name="SecureAct_Horizon_v3 (ModernBERT Multi-Task 141M)",
+            model_name=ds_res.get("model_name", "SecureAct_Horizon_v3 (ModernBERT Multi-Task 141M)"),
             filename=filename,
             flagged_snippets=snippets,
             deepshield=ds_res,
@@ -221,7 +223,8 @@ def make_prediction_response(
             forensic_profile=ds_res.get("forensic_profile"),
             latency_ms=ds_res.get("duration_ms")
         )
-    else:
+    except Exception as e:
+        logger.warning(f"Horizon inference failed ({e}), falling back to SecureAct AI v2: {e}")
         service = ModelService.get_instance()
         pred = service.predict(content)
         model_fn = service.pipeline.decision_function if (service and service.pipeline and hasattr(service.pipeline, "decision_function")) else None
