@@ -164,134 +164,101 @@ class DeepShieldService:
         return self.is_loaded or bool(os.environ.get("HF_TOKEN")) or True
 
     def predict_cloud(self, content: str, input_format: str = "html") -> Dict[str, Any]:
-        """Perform neural inference via Hugging Face Serverless Inference API for lufy77/secureact-horizon-v3."""
+        """Perform neural inference via Hugging Face Space Cloud Engine for lufy77/secureact-horizon-v3."""
         start_time = time.monotonic()
-        hf_repo = os.environ.get("HF_MODEL_REPO", "lufy77/secureact-horizon-v3")
-        hf_token = os.environ.get("HF_TOKEN", "")
-
-        endpoints = [
-            f"https://api-inference.huggingface.co/models/{hf_repo}",
-            f"https://router.huggingface.co/hf-inference/models/{hf_repo}"
-        ]
-
-        headers = {"Content-Type": "application/json"}
-        if hf_token:
-            headers["Authorization"] = f"Bearer {hf_token}"
-
-        clean_text = content[:4000]
-        threat_prob = 0.0
-        last_error = None
-        success = False
+        space_url = os.environ.get("HF_SPACE_URL", "https://lufy77-secureact-horizon-api.hf.space")
+        clean_text = content[:8192]
+        fmt = input_format if input_format in ("html", "markdown", "text", "accessibility") else "text"
 
         try:
             import httpx
             with httpx.Client(timeout=30.0) as client:
-                for endpoint_url in endpoints:
-                    try:
-                        resp = client.post(
-                            endpoint_url,
-                            headers=headers,
-                            json={"inputs": clean_text, "options": {"wait_for_model": True, "use_cache": True}}
-                        )
-                        if resp.status_code == 200:
-                            data = resp.json()
-                            # HF text classification pipeline returns [[{"label": "...", "score": ...}]]
-                            items = data[0] if isinstance(data, list) and len(data) > 0 and isinstance(data[0], list) else (data if isinstance(data, list) else [])
-                            for item in items:
-                                if isinstance(item, dict):
-                                    lbl = str(item.get("label", "")).upper()
-                                    score = float(item.get("score", 0.0))
-                                    if lbl in ("INJECTION", "LABEL_1", "THREAT", "ATTACK"):
-                                        threat_prob = score
-                                        success = True
-                                        break
-                                    elif lbl in ("SAFE", "LABEL_0", "BENIGN") and len(items) == 1:
-                                        threat_prob = 1.0 - score
-                                        success = True
-                            if success or len(items) > 0:
-                                success = True
-                                break
-                        else:
-                            last_error = f"{endpoint_url} returned {resp.status_code}: {resp.text[:200]}"
-                            logger.warning(f"HF inference attempt failed: {last_error}")
-                    except Exception as sub_e:
-                        last_error = f"{endpoint_url} error: {sub_e}"
-                        logger.warning(f"HF inference connection failed: {last_error}")
-
-            if not success:
-                raise RuntimeError(f"All HF endpoints failed. Last error: {last_error}")
+                call_resp = client.post(
+                    f"{space_url}/gradio_api/call/predict",
+                    headers={"Content-Type": "application/json"},
+                    json={"data": [clean_text, fmt]}
+                )
+                if call_resp.status_code != 200:
+                    raise RuntimeError(f"Space call failed with status {call_resp.status_code}: {call_resp.text[:200]}")
+                
+                event_id = call_resp.json().get("event_id")
+                if not event_id:
+                    raise RuntimeError(f"Space did not return event_id: {call_resp.text[:200]}")
+                
+                stream_resp = client.get(
+                    f"{space_url}/gradio_api/call/predict/{event_id}",
+                    timeout=30.0
+                )
+                if stream_resp.status_code != 200:
+                    raise RuntimeError(f"Space stream failed with status {stream_resp.status_code}")
+                
+                result_payload = None
+                for line in stream_resp.text.split("\n"):
+                    if line.startswith("data:"):
+                        parsed = json.loads(line[5:].strip())
+                        result_payload = parsed[0] if isinstance(parsed, list) and len(parsed) > 0 else parsed
+                        break
+                
+                if not result_payload or not isinstance(result_payload, dict):
+                    raise RuntimeError(f"Invalid payload received from Space: {stream_resp.text[:300]}")
         except Exception as e:
-            logger.warning(f"Cloud neural inference call failed: {e}")
+            logger.warning(f"Cloud Space neural inference call failed: {e}")
             raise
 
-        threshold = 0.50
-        is_threat = threat_prob >= threshold
-        margin = float(threat_prob - threshold)
+        threat_prob = float(result_payload.get("probability", 0.0))
+        threshold = float(result_payload.get("threshold", 0.50))
+        is_threat = bool(result_payload.get("is_injection", threat_prob >= threshold))
+        margin = float(result_payload.get("margin", threat_prob - threshold))
         duration_ms = round((time.monotonic() - start_time) * 1000, 2)
+        threat_tier = result_payload.get("threat_tier", "threat" if is_threat else "safe")
 
-        # Multi-tier Threat Assessment
-        if is_threat:
-            threat_tier = "threat"
-        elif threat_prob >= threshold - 0.10:
-            threat_tier = "caution"
-        else:
-            threat_tier = "safe"
-
-        # Forensic classification mapping from content heuristics
-        from .threat_analyzer import THREAT_PATTERNS
-        detected_categories = []
-        for tp in THREAT_PATTERNS:
-            if tp["pattern"].search(content):
-                detected_categories.append(tp["category"])
-
-        # Determine best matching forensic heads
-        attack_type = "system_prompt_exfiltration" if any("exfiltration" in c for c in detected_categories) else (
-            "role_manipulation" if any("identity" in c for c in detected_categories) else (
-                "ignore_previous" if any("system_override" in c for c in detected_categories) else (
-                    "delimiter_injection" if any("delimiter" in c for c in detected_categories) else (
-                        "tool_available_lure" if any("tool" in c for c in detected_categories) else "conditional_trigger"
-                    )
-                )
-            )
-        )
-
-        goal_class = "exfiltration" if "exfiltration" in attack_type else (
-            "unauthorized_action" if attack_type in ("ignore_previous", "tool_available_lure") else "persistence_or_state_change"
-        )
-        risk_category = "data-exfiltration" if goal_class == "exfiltration" else "browser-integrity"
-        injection_strategy = "delimiter_injection" if "delimiter" in attack_type else "raw_text"
-        requires_tools = "true" if attack_type == "tool_available_lure" else "false"
+        # Extract authentic forensic predictions from the Space
+        raw_forensics = result_payload.get("forensic_profile") or {}
+        attack_type = raw_forensics.get("attack_type", {}).get("prediction", "indirect_hypothetical")
+        attack_conf = float(raw_forensics.get("attack_type", {}).get("confidence", threat_prob))
+        
+        goal_class = raw_forensics.get("goal_class", {}).get("prediction", "exfiltration")
+        goal_conf = float(raw_forensics.get("goal_class", {}).get("confidence", threat_prob * 0.95))
+        
+        risk_category = raw_forensics.get("risk_category", {}).get("prediction", "data-exfiltration")
+        risk_conf = float(raw_forensics.get("risk_category", {}).get("confidence", threat_prob * 0.92))
+        
+        injection_strategy = raw_forensics.get("injection_strategy", {}).get("prediction", "inline_paragraph_rewrite")
+        strat_conf = float(raw_forensics.get("injection_strategy", {}).get("confidence", threat_prob * 0.90))
+        
+        requires_tools = raw_forensics.get("requires_action_tools", {}).get("prediction", "true")
+        tools_conf = float(raw_forensics.get("requires_action_tools", {}).get("confidence", threat_prob * 0.88))
 
         forensic_profile = {
             "attack_type": {
                 "code": attack_type,
                 "label_ar": ATTACK_TYPE_LABELS.get(attack_type, {}).get("ar", attack_type),
                 "label_en": ATTACK_TYPE_LABELS.get(attack_type, {}).get("en", attack_type),
-                "confidence": round(threat_prob, 4)
+                "confidence": round(attack_conf, 4)
             },
             "goal_class": {
                 "code": goal_class,
                 "label_ar": GOAL_CLASS_LABELS.get(goal_class, {}).get("ar", goal_class),
                 "label_en": GOAL_CLASS_LABELS.get(goal_class, {}).get("en", goal_class),
-                "confidence": round(threat_prob * 0.95, 4)
+                "confidence": round(goal_conf, 4)
             },
             "risk_category": {
                 "code": risk_category,
                 "label_ar": RISK_CATEGORY_LABELS.get(risk_category, {}).get("ar", risk_category),
                 "label_en": RISK_CATEGORY_LABELS.get(risk_category, {}).get("en", risk_category),
-                "confidence": round(threat_prob * 0.92, 4)
+                "confidence": round(risk_conf, 4)
             },
             "injection_strategy": {
                 "code": injection_strategy,
                 "label_ar": INJECTION_STRATEGY_LABELS.get(injection_strategy, {}).get("ar", injection_strategy),
                 "label_en": INJECTION_STRATEGY_LABELS.get(injection_strategy, {}).get("en", injection_strategy),
-                "confidence": round(threat_prob * 0.90, 4)
+                "confidence": round(strat_conf, 4)
             },
             "requires_action_tools": {
                 "code": requires_tools,
                 "label_ar": REQUIRES_ACTION_TOOLS_LABELS.get(requires_tools, {}).get("ar", requires_tools),
                 "label_en": REQUIRES_ACTION_TOOLS_LABELS.get(requires_tools, {}).get("en", requires_tools),
-                "confidence": round(threat_prob * 0.88, 4)
+                "confidence": round(tools_conf, 4)
             }
         }
 
